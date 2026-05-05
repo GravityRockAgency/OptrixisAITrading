@@ -1,0 +1,2 @@
+# OptrixisAITrading
+Optrixis AI Trading
