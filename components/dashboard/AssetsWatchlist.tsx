@@ -131,7 +131,7 @@ export function AssetsWatchlist() {
                     className={`px-3 py-2.5 text-left text-[10px] font-semibold uppercase tracking-wider ${
                       col === 'Asset' ? 'px-4' : ''
                     } ${col === 'Setup' ? 'hidden md:table-cell' : ''} ${
-                      col === 'News Risk' || col === 'Score' ? 'hidden lg:table-cell' : ''
+                      col === 'News Risk' ? 'hidden lg:table-cell' : col === 'Score' ? 'hidden md:table-cell' : ''
                     } ${col === 'Price' ? 'text-right' : ''}`}
                     style={{ color: '#64748B' }}
                   >

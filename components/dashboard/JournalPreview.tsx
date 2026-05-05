@@ -34,7 +34,7 @@ export function JournalPreview() {
         </Link>
       </div>
 
-      <div className="divide-y" style={{ borderColor: '#24314F' }}>
+      <div>
         {recentTrades.map((trade) => {
           const isWin = trade.result === 'Win';
           const isLoss = trade.result === 'Loss';
@@ -42,7 +42,8 @@ export function JournalPreview() {
           return (
             <div
               key={trade.id}
-              className="flex items-center gap-4 px-4 py-3"
+              className="flex items-center gap-4 px-4 py-3 border-b"
+              style={{ borderColor: '#24314F' }}
             >
               {/* Result indicator */}
               <div

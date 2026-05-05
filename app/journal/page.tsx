@@ -163,14 +163,12 @@ export default function JournalPage() {
                       </span>
                     </td>
                     <td className="px-3 py-2.5">
-                      {trade.entry > 0 && (
-                        <span
-                          className="text-xs font-semibold"
-                          style={{ color: trade.direction === 'LONG' ? '#22C55E' : '#EF4444' }}
-                        >
-                          {trade.direction === 'LONG' ? '▲' : '▼'}
-                        </span>
-                      )}
+                      <span
+                        className="text-xs font-semibold"
+                        style={{ color: trade.direction === 'LONG' ? '#22C55E' : '#EF4444' }}
+                      >
+                        {trade.direction === 'LONG' ? '▲' : '▼'}
+                      </span>
                     </td>
                     <td className="px-3 py-2.5 text-xs whitespace-nowrap" style={{ color: '#94A3B8' }}>
                       {trade.setupType}
