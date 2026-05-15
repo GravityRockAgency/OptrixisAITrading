@@ -1,0 +1,29 @@
+# Generated plugin packages
+*.zip
+
+# Binary media and documents are intentionally excluded from this plugin repo
+*.png
+*.jpg
+*.jpeg
+*.webp
+*.gif
+*.pdf
+
+# Compiled translation files; keep source .po files only
+*.mo
+
+# Font binaries
+*.ttf
+*.otf
+*.woff
+*.woff2
+
+# Cache/build artifacts
+.cache/
+.cache
+build/
+dist/
+node_modules/
+vendor/
+*.log
+.DS_Store
