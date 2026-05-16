@@ -1,7 +1,7 @@
 <?php
-require_once '../includes/db.php';
-require_once '../includes/auth.php';
-require_once '../includes/functions.php';
+require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/functions.php';
 require_login();
 
 $page_title    = 'Centre WhatsApp';
@@ -46,8 +46,8 @@ include 'layout-top.php';
 
 <!-- Tab nav -->
 <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid #E5EDE9">
-  <?php foreach (['messages'=>'💬 Messages rapides','history'=>'📋 Historique','settings'=>'⚙️ Paramètres'] as $t=>$l): ?>
-  <a href="?tab=<?= $t ?>" style="padding:12px 20px;font-size:14px;font-weight:500;text-decoration:none;border-bottom:2px solid <?= $active_tab===$t?'#2D6A4F':'transparent' ?>;color:<?= $active_tab===$t?'#2D6A4F':'#6B7A72' ?>;margin-bottom:-2px">
+  <?php foreach ([' messages'=>'💬 Messages rapides','history'=>'📋 Historique','settings'=>'⚙️ Paramètres'] as $t=>$l): ?>
+  <a href="?tab=<?= trim($t) ?>" style="padding:12px 20px;font-size:14px;font-weight:500;text-decoration:none;border-bottom:2px solid <?= $active_tab===trim($t)?'#2D6A4F':'transparent' ?>;color:<?= $active_tab===trim($t)?'#2D6A4F':'#6B7A72' ?>;margin-bottom:-2px">
     <?= $l ?>
   </a>
   <?php endforeach; ?>
@@ -91,7 +91,7 @@ include 'layout-top.php';
   </div>
   <?php if (empty($history)): ?>
   <div class="fk-empty-state" style="padding:40px">
-    <div style="font-size:40px;margin-bottom:12px">📭</div>
+    <div style="font-size:40px;margin-bottom:12px">💭</div>
     <div class="fk-empty-title">Aucun historique</div>
     <div class="fk-empty-text">Les messages envoyés apparaîtront ici.</div>
   </div>
