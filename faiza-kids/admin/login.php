@@ -4,8 +4,8 @@
  * Standalone page (does not use layout-top/bottom)
  */
 
-require_once '../includes/db.php';
-require_once '../includes/auth.php';
+require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/auth.php';
 
 // Already authenticated → redirect
 if (is_logged_in()) {
