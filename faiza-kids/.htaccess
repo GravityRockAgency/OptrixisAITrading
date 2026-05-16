@@ -27,8 +27,8 @@ Options -MultiViews
     Header set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
 
-# PHP settings (shared hosting)
-<IfModule mod_php8.c>
+# PHP settings (shared hosting - Apache mod_php only, skip on LiteSpeed/FPM)
+<IfModule mod_php.c>
     php_flag display_errors Off
     php_flag log_errors On
     php_value upload_max_filesize 10M
