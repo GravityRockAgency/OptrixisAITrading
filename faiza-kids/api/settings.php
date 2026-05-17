@@ -4,9 +4,9 @@
  * Manages application settings, SMTP testing, backup and data reset
  */
 
-require_once '../includes/db.php';
-require_once '../includes/auth.php';
-require_once '../includes/functions.php';
+require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/functions.php';
 
 header('Content-Type: application/json; charset=UTF-8');
 
@@ -61,7 +61,6 @@ function action_save(): void {
         json_error('Aucun paramètre fourni');
     }
 
-    // Blacklisted keys that cannot be changed via API
     $blacklisted = ['install_token', 'admin_password'];
 
     $saved = [];
@@ -73,7 +72,6 @@ function action_save(): void {
             $skipped[] = $key;
             continue;
         }
-        // Only accept scalar values
         if (!is_scalar($value) && $value !== null) {
             $skipped[] = $key;
             continue;
@@ -95,7 +93,6 @@ function action_save(): void {
 function action_test_smtp(): void {
     global $input;
 
-    // Read SMTP settings from input or fall back to stored settings
     $smtp_host = $input['smtp_host'] ?? get_setting('smtp_host', '');
     $smtp_port = (int)($input['smtp_port'] ?? get_setting('smtp_port', '587'));
     $smtp_user = $input['smtp_user'] ?? get_setting('smtp_user', '');
@@ -108,7 +105,6 @@ function action_test_smtp(): void {
     if (!$smtp_user) json_error('Utilisateur SMTP non configuré');
     if (!$test_to)   json_error('Adresse email de test manquante');
 
-    // Test TCP connection first
     $ctx = stream_context_create(['ssl' => ['verify_peer' => false, 'verify_peer_name' => false]]);
     $scheme = ($smtp_enc === 'ssl') ? 'ssl://' : '';
     $fp = @stream_socket_client(
@@ -124,14 +120,12 @@ function action_test_smtp(): void {
         json_error("Impossible de se connecter au serveur SMTP ($smtp_host:$smtp_port) : $errstr");
     }
 
-    // Read banner
     $banner = fgets($fp, 1024);
     if (!str_starts_with(trim($banner), '220')) {
         fclose($fp);
         json_error('Réponse inattendue du serveur SMTP : ' . trim($banner));
     }
 
-    // EHLO
     fputs($fp, "EHLO faizakids.local\r\n");
     $ehlo = '';
     while ($line = fgets($fp, 1024)) {
@@ -139,7 +133,6 @@ function action_test_smtp(): void {
         if (isset($line[3]) && $line[3] === ' ') break;
     }
 
-    // STARTTLS if needed
     if ($smtp_enc === 'tls') {
         fputs($fp, "STARTTLS\r\n");
         $tls_resp = fgets($fp, 1024);
@@ -155,7 +148,6 @@ function action_test_smtp(): void {
         }
     }
 
-    // AUTH LOGIN
     fputs($fp, "AUTH LOGIN\r\n");
     $auth_resp = fgets($fp, 1024);
     if (!str_starts_with(trim($auth_resp), '334')) {
@@ -177,7 +169,6 @@ function action_test_smtp(): void {
         json_error('Mot de passe SMTP incorrect');
     }
 
-    // Send test email
     $company = get_setting('company_name', 'Faiza Kids Concierge');
     $subject  = '=?UTF-8?B?' . base64_encode('Test SMTP — ' . $company) . '?=';
     $body     = "Ceci est un email de test envoyé depuis $company.\r\nDate : " . date('d/m/Y H:i:s');
@@ -226,37 +217,19 @@ function action_export_backup(): void {
         'notifications'  => [],
     ];
 
-    // Settings
     $rows = db_fetch_all("SELECT setting_key, setting_value FROM settings ORDER BY setting_key ASC");
     foreach ($rows as $r) {
         $data['settings'][$r['setting_key']] = $r['setting_value'];
     }
 
-    // Hotels
-    $data['hotels'] = db_fetch_all("SELECT * FROM hotels ORDER BY id ASC");
-
-    // Babysitters (exclude nothing sensitive here since this is admin export)
-    $data['babysitters'] = db_fetch_all("SELECT * FROM babysitters ORDER BY id ASC");
-
-    // Babysitter hotel assignments
-    $data['babysitter_hotels'] = db_fetch_all("SELECT * FROM babysitter_hotels ORDER BY id ASC");
-
-    // WhatsApp templates
-    $data['whatsapp_templates'] = db_fetch_all("SELECT * FROM whatsapp_templates ORDER BY id ASC");
-
-    // Bookings
-    $data['bookings'] = db_fetch_all("SELECT * FROM bookings ORDER BY id ASC");
-
-    // Booking children
-    $data['booking_children'] = db_fetch_all("SELECT * FROM booking_children ORDER BY id ASC");
-
-    // Payment proofs
-    $data['payment_proofs'] = db_fetch_all("SELECT * FROM payment_proofs ORDER BY id ASC");
-
-    // Activity log (last 1000 entries to keep file size reasonable)
-    $data['activity_logs'] = db_fetch_all(
-        "SELECT * FROM activity_logs ORDER BY id DESC LIMIT 1000"
-    );
+    $data['hotels']              = db_fetch_all("SELECT * FROM hotels ORDER BY id ASC");
+    $data['babysitters']         = db_fetch_all("SELECT * FROM babysitters ORDER BY id ASC");
+    $data['babysitter_hotels']   = db_fetch_all("SELECT * FROM babysitter_hotels ORDER BY id ASC");
+    $data['whatsapp_templates']  = db_fetch_all("SELECT * FROM whatsapp_templates ORDER BY id ASC");
+    $data['bookings']            = db_fetch_all("SELECT * FROM bookings ORDER BY id ASC");
+    $data['booking_children']    = db_fetch_all("SELECT * FROM booking_children ORDER BY id ASC");
+    $data['payment_proofs']      = db_fetch_all("SELECT * FROM payment_proofs ORDER BY id ASC");
+    $data['activity_logs']       = db_fetch_all("SELECT * FROM activity_logs ORDER BY id DESC LIMIT 1000");
 
     $filename = 'faizakids_backup_' . date('Y-m-d_His') . '.json';
 
@@ -281,8 +254,7 @@ function action_reset_test_data(): void {
         json_error("Code de confirmation invalide. Entrez exactement : $expected");
     }
 
-    // Safety: only allow in development or with explicit flag
-    $env = defined('APP_ENV') ? APP_ENV : get_setting('app_env', 'production');
+    $env   = defined('APP_ENV') ? APP_ENV : get_setting('app_env', 'production');
     $force = !empty($input['force']) && $input['force'] === true;
 
     if ($env === 'production' && !$force) {
@@ -291,7 +263,6 @@ function action_reset_test_data(): void {
 
     db_begin();
     try {
-        // Delete in FK-safe order
         db_query("DELETE FROM payment_proofs");
         db_query("DELETE FROM booking_children");
         db_query("DELETE FROM whatsapp_logs");
@@ -299,7 +270,6 @@ function action_reset_test_data(): void {
         db_query("DELETE FROM bookings");
         db_query("DELETE FROM activity_logs");
 
-        // Reset auto-increment
         db_query("ALTER TABLE bookings         AUTO_INCREMENT = 1");
         db_query("ALTER TABLE booking_children AUTO_INCREMENT = 1");
         db_query("ALTER TABLE payment_proofs   AUTO_INCREMENT = 1");
@@ -314,7 +284,6 @@ function action_reset_test_data(): void {
         json_error('Erreur lors de la réinitialisation : ' . $e->getMessage());
     }
 
-    // Log after tables are cleared (fresh entry)
     log_activity('data_reset', 'Données de test réinitialisées par ' . ($_SESSION['admin_username'] ?? 'admin'));
 
     json_success([

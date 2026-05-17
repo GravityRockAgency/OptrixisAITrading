@@ -4,9 +4,9 @@
  * Statistics, analytics and exports for the admin dashboard
  */
 
-require_once '../includes/db.php';
-require_once '../includes/auth.php';
-require_once '../includes/functions.php';
+require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/functions.php';
 
 header('Content-Type: application/json; charset=UTF-8');
 
@@ -50,7 +50,6 @@ function get_date_range(): array {
     $date_start = $_GET['date_start'] ?? date('Y-m-01');
     $date_end   = $_GET['date_end']   ?? date('Y-m-t');
 
-    // Basic validation
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date_start)) {
         $date_start = date('Y-m-01');
     }
@@ -210,7 +209,6 @@ function action_hourly_slots(): void {
         [$date_start, $date_end]
     );
 
-    // Fill in all 24 hours
     $all_hours = array_fill(0, 24, ['count' => 0, 'avg_duration' => 0]);
     foreach ($rows as $row) {
         $h = (int)$row['hour'];
@@ -222,7 +220,6 @@ function action_hourly_slots(): void {
         ];
     }
 
-    // Add hour and label to unfilled slots
     foreach ($all_hours as $h => &$slot) {
         if (!isset($slot['hour'])) {
             $slot['hour']  = $h;
@@ -308,8 +305,8 @@ function action_babysitter_performance(): void {
     );
 
     foreach ($rows as &$row) {
-        $row['total_hours']       = round((float)$row['total_minutes'] / 60, 1);
-        $row['completion_rate']   = $row['booking_count'] > 0
+        $row['total_hours']     = round((float)$row['total_minutes'] / 60, 1);
+        $row['completion_rate'] = $row['booking_count'] > 0
             ? round($row['completed'] / $row['booking_count'] * 100, 1)
             : 0;
     }
@@ -392,7 +389,6 @@ function action_export_csv(): void {
 function action_export_pdf(): void {
     [$date_start, $date_end] = get_date_range();
 
-    // Compute summary stats
     $stats = db_fetch(
         "SELECT COUNT(*) AS total,
                 COALESCE(SUM(CASE WHEN payment_status = 'validated' THEN final_price ELSE 0 END), 0) AS revenue,
@@ -433,7 +429,6 @@ function action_export_pdf(): void {
     $company_name = get_setting('company_name', 'Faiza Kids Concierge');
     $logo         = get_setting('company_logo', '');
 
-    // Serve HTML for PDF printing
     header('Content-Type: text/html; charset=UTF-8');
 
     $date_start_fr = format_date_fr($date_start);
