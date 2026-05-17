@@ -37,8 +37,6 @@ if (session_status() === PHP_SESSION_NONE) {
 
 /**
  * Check whether an admin is currently logged in
- *
- * @return bool
  */
 function is_logged_in(): bool {
     return !empty($_SESSION['admin_id']) && !empty($_SESSION['admin_username']);
@@ -49,18 +47,14 @@ function is_logged_in(): bool {
  */
 function require_login(): void {
     if (!is_logged_in()) {
-        $redirect = urlencode($_SERVER['REQUEST_URI'] ?? '/admin');
-        header('Location: ' . (defined('BASE_URL') ? BASE_URL : '') . '/admin/login?redirect=' . $redirect);
+        $redirect = urlencode($_SERVER['REQUEST_URI'] ?? '/admin/dashboard.php');
+        header('Location: /admin/login.php?redirect=' . $redirect);
         exit;
     }
 }
 
 /**
  * Attempt to log in an admin
- *
- * @param string $username
- * @param string $password
- * @return array|false  Admin row on success, false on failure
  */
 function login(string $username, string $password) {
     $admin = db_fetch(
@@ -114,14 +108,11 @@ function logout(): void {
 
 /**
  * Return current admin data from DB (cached in session)
- *
- * @return array|null
  */
 function get_admin(): ?array {
     if (!is_logged_in()) {
         return null;
     }
-    // Lazy-load full admin row
     if (empty($_SESSION['_admin_data'])) {
         $admin = db_fetch(
             "SELECT id, username, email, full_name, avatar, last_login, created_at FROM admins WHERE id = ?",
@@ -132,13 +123,8 @@ function get_admin(): ?array {
     return $_SESSION['_admin_data'];
 }
 
-// ── CSRF Protection ───────────────────────────────────────────────────────────
+// ── CSRF Protection ─────────────────────────────────────────────
 
-/**
- * Generate (or retrieve existing) CSRF token for the current session
- *
- * @return string
- */
 function generate_csrf(): string {
     if (empty($_SESSION['_csrf_token'])) {
         $_SESSION['_csrf_token'] = bin2hex(random_bytes(32));
@@ -146,12 +132,6 @@ function generate_csrf(): string {
     return $_SESSION['_csrf_token'];
 }
 
-/**
- * Verify that the supplied token matches the session CSRF token
- *
- * @param string $token
- * @return bool
- */
 function verify_csrf(string $token): bool {
     if (empty($_SESSION['_csrf_token'])) {
         return false;
@@ -159,18 +139,10 @@ function verify_csrf(string $token): bool {
     return hash_equals($_SESSION['_csrf_token'], $token);
 }
 
-/**
- * Output a hidden CSRF input field (convenience helper for forms)
- *
- * @return string  HTML string
- */
 function csrf_field(): string {
     return '<input type="hidden" name="_csrf_token" value="' . htmlspecialchars(generate_csrf(), ENT_QUOTES) . '">';
 }
 
-/**
- * Validate CSRF from POST and die with JSON error if invalid (for API endpoints)
- */
 function require_csrf(): void {
     $token = $_POST['_csrf_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
     if (!verify_csrf($token)) {
