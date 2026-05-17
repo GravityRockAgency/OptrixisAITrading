@@ -1,23 +1,21 @@
 Options -Indexes
 Options -MultiViews
 
-<IfModule mod_rewrite.c>
-    RewriteEngine On
-    RewriteBase /
+RewriteEngine On
+RewriteBase /
 
-    # Protect sensitive files
-    RewriteRule ^config\.php$ - [F,L]
-    RewriteRule ^includes/ - [F,L]
-    RewriteRule ^\.htaccess$ - [F,L]
+# Protect sensitive files
+RewriteRule ^config\.php$ - [F,L]
+RewriteRule ^includes/ - [F,L]
+RewriteRule ^\.htaccess$ - [F,L]
 
-    # Allow direct access to real files and directories
-    RewriteCond %{REQUEST_FILENAME} -f [OR]
-    RewriteCond %{REQUEST_FILENAME} -d
-    RewriteRule ^ - [L]
+# Allow direct access to real files and directories
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
 
-    # Route everything else through index.php
-    RewriteRule ^(.*)$ index.php [QSA,L]
-</IfModule>
+# Route everything else through index.php
+RewriteRule ^ index.php [QSA,L]
 
 # Security headers
 <IfModule mod_headers.c>
@@ -27,22 +25,10 @@ Options -MultiViews
     Header set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
 
-# PHP settings (shared hosting - Apache mod_php only, skip on LiteSpeed/FPM)
-<IfModule mod_php.c>
-    php_flag display_errors Off
-    php_flag log_errors On
-    php_value upload_max_filesize 10M
-    php_value post_max_size 12M
-    php_value max_execution_time 120
-    php_value memory_limit 256M
-</IfModule>
-
-# Compress text files
 <IfModule mod_deflate.c>
     AddOutputFilterByType DEFLATE text/html text/plain text/css application/javascript application/json
 </IfModule>
 
-# Cache static assets
 <IfModule mod_expires.c>
     ExpiresActive On
     ExpiresByType image/jpeg "access plus 1 month"
