@@ -4,9 +4,9 @@
  * Manages message templates, building messages and logging WhatsApp interactions
  */
 
-require_once '../includes/db.php';
-require_once '../includes/auth.php';
-require_once '../includes/functions.php';
+require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/functions.php';
 
 header('Content-Type: application/json; charset=UTF-8');
 
@@ -33,36 +33,25 @@ function json_error(string $message, int $code = 400): void {
 
 // ── Route dispatcher ──────────────────────────────────────────────────────────
 match (true) {
-    $method === 'GET'  && $action === 'templates'     => action_templates(),
-    $method === 'GET'  && $action === 'template'      => action_template(),
+    $method === 'GET'  && $action === 'templates'       => action_templates(),
+    $method === 'GET'  && $action === 'template'        => action_template(),
     $method === 'POST' && $action === 'update_template' => action_update_template(),
-    $method === 'GET'  && $action === 'build_message' => action_build_message(),
-    $method === 'POST' && $action === 'log'           => action_log(),
-    $method === 'GET'  && $action === 'history'       => action_history(),
-    $method === 'GET'  && $action === 'history_all'   => action_history_all(),
-    default                                           => json_error('Action non reconnue', 404),
+    $method === 'GET'  && $action === 'build_message'   => action_build_message(),
+    $method === 'POST' && $action === 'log'             => action_log(),
+    $method === 'GET'  && $action === 'history'         => action_history(),
+    $method === 'GET'  && $action === 'history_all'     => action_history_all(),
+    default                                             => json_error('Action non reconnue', 404),
 };
 
-// ── Core: build a message with variable replacement ───────────────────────────
+// ── Core: build a message with variable replacement ─────────────────────────────────
 
-/**
- * Replace all template variables with real booking data.
- *
- * @param string $template     Raw template string with {placeholders}
- * @param array  $booking      Full booking row (with hotel_name, babysitter_name etc.)
- * @param string $lang         'fr' | 'ar' | 'en'
- * @param array  $extra        Additional variables: ['custom_note' => '...']
- * @return string
- */
 function build_message_from_template(string $template, array $booking, string $lang = 'fr', array $extra = []): string {
-    // Fetch child names
     $children = db_fetch_all(
         "SELECT name FROM booking_children WHERE booking_id = ? ORDER BY id ASC",
         [(int)$booking['id']]
     );
     $child_names = implode(', ', array_column($children, 'name'));
 
-    // Format date by language
     if ($lang === 'ar') {
         $date_formatted = format_date_ar($booking['service_date']);
     } elseif ($lang === 'en') {
@@ -72,24 +61,18 @@ function build_message_from_template(string $template, array $booking, string $l
         $date_formatted = format_date_fr($booking['service_date']);
     }
 
-    // Format duration
     $duration_str = format_duration((int)($booking['duration_minutes'] ?? 0));
+    $start_time   = substr($booking['start_time'] ?? '', 0, 5);
 
-    // Format start time (strip seconds)
-    $start_time = substr($booking['start_time'] ?? '', 0, 5);
-
-    // Price display
     $price = (!empty($booking['final_price']))
         ? format_price($booking['final_price'])
         : 'À confirmer';
 
-    // Payment link
     $token        = $booking['secure_token'] ?? '';
     $payment_link = $token
         ? (defined('BASE_URL') ? BASE_URL : '') . '/payment-proof/' . $token
         : '(lien non encore généré)';
 
-    // Bank details from settings
     $bank_name    = get_setting('bank_name', '');
     $account_name = get_setting('bank_account_name', '');
     $rib          = get_setting('bank_rib', '');
@@ -118,9 +101,6 @@ function build_message_from_template(string $template, array $booking, string $l
     return str_replace(array_keys($replacements), array_values($replacements), $template);
 }
 
-/**
- * Arabic date formatting (basic transliteration).
- */
 function format_date_ar(string $date): string {
     if (empty($date)) return '';
     $ts = strtotime($date);
@@ -144,13 +124,12 @@ function format_date_ar(string $date): string {
     return $days[$dow] . ' ' . $d . ' ' . $months[$m] . ' ' . $y;
 }
 
-// ── GET action=templates ──────────────────────────────────────────────────────
+// ── GET action=templates ──────────────────────────────────────────────────────────
 function action_templates(): void {
     $templates = db_fetch_all(
         "SELECT * FROM whatsapp_templates ORDER BY template_key ASC, lang ASC"
     );
 
-    // Group by template_key
     $grouped = [];
     foreach ($templates as $tpl) {
         $grouped[$tpl['template_key']][] = $tpl;
@@ -159,7 +138,7 @@ function action_templates(): void {
     json_success(['templates' => $grouped]);
 }
 
-// ── GET action=template&key=X&lang=Y ─────────────────────────────────────────
+// ── GET action=template&key=X&lang=Y ───────────────────────────────────────────────
 function action_template(): void {
     $key  = $_GET['key']  ?? '';
     $lang = $_GET['lang'] ?? 'fr';
@@ -172,7 +151,6 @@ function action_template(): void {
     );
 
     if (!$template) {
-        // Fallback to French
         $template = db_fetch(
             "SELECT * FROM whatsapp_templates WHERE template_key = ? AND lang = 'fr' LIMIT 1",
             [$key]
@@ -184,7 +162,7 @@ function action_template(): void {
     json_success(['template' => $template]);
 }
 
-// ── POST action=update_template ───────────────────────────────────────────────
+// ── POST action=update_template ────────────────────────────────────────────────────
 function action_update_template(): void {
     global $input;
 
@@ -231,7 +209,7 @@ function action_update_template(): void {
     json_success(['template' => $template, 'message' => 'Template mis à jour avec succès']);
 }
 
-// ── GET action=build_message&booking_id=X&template_key=Y&lang=Z ──────────────
+// ── GET action=build_message&booking_id=X&template_key=Y&lang=Z ──────────────────────
 function action_build_message(): void {
     $booking_id   = (int)($_GET['booking_id']   ?? 0);
     $template_key = trim($_GET['template_key']  ?? '');
@@ -241,7 +219,6 @@ function action_build_message(): void {
     if (!$booking_id)   json_error('Identifiant de réservation manquant');
     if (!$template_key) json_error('Clé de template manquante');
 
-    // Fetch booking with hotel and babysitter info
     $booking = db_fetch(
         "SELECT b.*,
                 h.name    AS hotel_name,
@@ -256,13 +233,11 @@ function action_build_message(): void {
     );
     if (!$booking) json_error('Réservation introuvable', 404);
 
-    // Fetch template
     $template = db_fetch(
         "SELECT * FROM whatsapp_templates WHERE template_key = ? AND lang = ? LIMIT 1",
         [$template_key, $lang]
     );
     if (!$template) {
-        // Try French fallback
         $template = db_fetch(
             "SELECT * FROM whatsapp_templates WHERE template_key = ? AND lang = 'fr' LIMIT 1",
             [$template_key]
@@ -277,7 +252,6 @@ function action_build_message(): void {
         ['custom_note' => $custom_note]
     );
 
-    // Normalise WhatsApp number
     $phone        = preg_replace('/[^\d+]/', '', $booking['client_whatsapp']);
     $phone        = ltrim($phone, '+');
     $whatsapp_url = 'https://wa.me/' . $phone . '?text=' . rawurlencode($built_message);
@@ -291,14 +265,14 @@ function action_build_message(): void {
     ]);
 }
 
-// ── POST action=log ───────────────────────────────────────────────────────────
+// ── POST action=log ───────────────────────────────────────────────────────────────
 function action_log(): void {
     global $input;
 
     $booking_id    = (int)($input['booking_id'] ?? 0);
     $template_key  = trim($input['template_key'] ?? '');
     $lang          = trim($input['lang']         ?? 'fr');
-    $event_type    = trim($input['event_type']   ?? 'copied'); // copied | opened | sent
+    $event_type    = trim($input['event_type']   ?? 'copied');
     $message       = trim($input['message']      ?? '');
 
     if (!$booking_id) json_error('Identifiant de réservation manquant');
@@ -329,7 +303,7 @@ function action_log(): void {
     ]);
 }
 
-// ── GET action=history&booking_id=X ──────────────────────────────────────────
+// ── GET action=history&booking_id=X ────────────────────────────────────────────────
 function action_history(): void {
     $booking_id = (int)($_GET['booking_id'] ?? 0);
     if (!$booking_id) json_error('Identifiant de réservation manquant');
@@ -349,7 +323,7 @@ function action_history(): void {
     json_success(['history' => $logs, 'count' => count($logs)]);
 }
 
-// ── GET action=history_all ────────────────────────────────────────────────────
+// ── GET action=history_all ────────────────────────────────────────────────────────
 function action_history_all(): void {
     $page     = max(1, (int)($_GET['page']     ?? 1));
     $per_page = max(1, min(100, (int)($_GET['per_page'] ?? 20)));

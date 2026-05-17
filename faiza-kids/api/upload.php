@@ -7,21 +7,21 @@
  * All other upload actions require admin login.
  */
 
-require_once '../includes/db.php';
-require_once '../includes/auth.php';
-require_once '../includes/functions.php';
+require_once __DIR__ . '/../includes/db.php';
+require_once __DIR__ . '/../includes/auth.php';
+require_once __DIR__ . '/../includes/functions.php';
 
 $method = $_SERVER['REQUEST_METHOD'];
 $action = $_GET['action'] ?? '';
 
-// ── Public routes (no login) ──────────────────────────────────────────────────
+// ── Public routes (no login) ─────────────────────────────────────────────────
 if ($action === 'proof') {
     header('Content-Type: application/json; charset=UTF-8');
     handle_proof_upload();
     exit;
 }
 
-// ── All other routes require admin login ──────────────────────────────────────
+// ── All other routes require admin login ─────────────────────────────────────────
 header('Content-Type: application/json; charset=UTF-8');
 
 if (!is_logged_in()) {
@@ -53,20 +53,14 @@ match ($action) {
 // Shared upload helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Get max upload size in bytes (from settings or PHP defaults).
- */
 function get_max_size(): int {
     $setting_mb = (int) get_setting('upload_max_size_mb', '5');
     if ($setting_mb > 0) {
         return $setting_mb * 1048576;
     }
-    return 5 * 1048576; // 5 MB default
+    return 5 * 1048576;
 }
 
-/**
- * Validate and move an uploaded file, returning structured result.
- */
 function process_upload(
     string $field,
     string $dest_dir,
@@ -98,7 +92,6 @@ function process_upload(
         return ['success' => false, 'error' => 'Fichier trop volumineux (max ' . round($max_size / 1048576, 1) . ' Mo).'];
     }
 
-    // Check MIME
     $finfo = new finfo(FILEINFO_MIME_TYPE);
     $mime  = $finfo->file($file['tmp_name']);
 
@@ -106,7 +99,6 @@ function process_upload(
         return ['success' => false, 'error' => 'Type de fichier non autorisé (' . $mime . '). Types acceptés : ' . implode(', ', $allowed_mimes)];
     }
 
-    // Extension mapping
     $ext_map = [
         'image/jpeg'       => 'jpg',
         'image/png'        => 'png',
@@ -116,7 +108,6 @@ function process_upload(
     ];
     $ext = $ext_map[$mime] ?? strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
 
-    // Safe filename
     $id_part  = $entity_id ? $entity_id . '_' : '';
     $filename = $prefix . '_' . $id_part . time() . '_' . bin2hex(random_bytes(4)) . '.' . $ext;
 
@@ -145,9 +136,6 @@ function process_upload(
 // Admin upload actions
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * POST action=logo — Upload the company/application logo
- */
 function handle_logo_upload(): void {
     $allowed_mimes = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
     $dest_dir      = dirname(__DIR__) . '/uploads/logos';
@@ -159,7 +147,6 @@ function handle_logo_upload(): void {
 
     $logo_path = 'uploads/logos/' . $result['filename'];
 
-    // Delete old logo
     $old_path = get_setting('company_logo', '');
     if ($old_path) {
         $old_file = dirname(__DIR__) . '/' . ltrim($old_path, '/');
@@ -180,9 +167,6 @@ function handle_logo_upload(): void {
     ]);
 }
 
-/**
- * POST action=hotel_logo&hotel_id=X — Upload a hotel logo
- */
 function handle_hotel_logo_upload(): void {
     $hotel_id = (int)($_GET['hotel_id'] ?? $_POST['hotel_id'] ?? 0);
     if (!$hotel_id) json_error('Identifiant hôtel manquant');
@@ -200,7 +184,6 @@ function handle_hotel_logo_upload(): void {
 
     $logo_path = 'uploads/logos/' . $result['filename'];
 
-    // Delete old hotel logo
     if (!empty($hotel['logo'])) {
         $old_file = dirname(__DIR__) . '/' . ltrim($hotel['logo'], '/');
         if (file_exists($old_file)) {
@@ -223,9 +206,6 @@ function handle_hotel_logo_upload(): void {
     ]);
 }
 
-/**
- * POST action=login_image — Upload the login page background image
- */
 function handle_login_image_upload(): void {
     $allowed_mimes = ['image/jpeg', 'image/png', 'image/webp'];
     $dest_dir      = dirname(__DIR__) . '/uploads/logos';
@@ -237,7 +217,6 @@ function handle_login_image_upload(): void {
 
     $image_path = 'uploads/logos/' . $result['filename'];
 
-    // Delete old login image
     $old_path = get_setting('login_image', '');
     if ($old_path) {
         $old_file = dirname(__DIR__) . '/' . ltrim($old_path, '/');
@@ -262,10 +241,6 @@ function handle_login_image_upload(): void {
 // Public proof upload action (no session required)
 // ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * POST action=proof&token=X — Upload payment proof (public page)
- * Validates token against booking, then saves the file.
- */
 function handle_proof_upload(): void {
     if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
         http_response_code(405);
@@ -281,7 +256,6 @@ function handle_proof_upload(): void {
         exit;
     }
 
-    // Validate token
     $booking = db_fetch(
         "SELECT id, reference, payment_status, status FROM bookings WHERE secure_token = ? LIMIT 1",
         [$token]
@@ -311,7 +285,6 @@ function handle_proof_upload(): void {
         exit;
     }
 
-    // Allow images + PDF for proofs
     $allowed_mimes = [
         'image/jpeg',
         'image/png',
@@ -319,10 +292,9 @@ function handle_proof_upload(): void {
         'application/pdf',
     ];
 
-    $dest_dir = dirname(__DIR__) . '/uploads/proofs';
+    $dest_dir   = dirname(__DIR__) . '/uploads/proofs';
     $booking_id = (int)$booking['id'];
 
-    // Custom inline process (can't use process_upload — no json_error here)
     $file = $_FILES['proof'];
 
     if ($file['error'] !== UPLOAD_ERR_OK) {
@@ -337,7 +309,7 @@ function handle_proof_upload(): void {
         exit;
     }
 
-    $max_size = 10 * 1048576; // 10 MB for proof uploads
+    $max_size = 10 * 1048576;
     if ($file['size'] > $max_size) {
         http_response_code(400);
         echo json_encode(['success' => false, 'error' => 'Fichier trop volumineux (max 10 Mo).']);
@@ -371,7 +343,6 @@ function handle_proof_upload(): void {
 
     $file_path = 'uploads/proofs/' . $filename;
 
-    // Insert proof record
     $proof_id = db_insert('payment_proofs', [
         'booking_id'   => $booking_id,
         'file_path'    => $file_path,
@@ -384,13 +355,11 @@ function handle_proof_upload(): void {
         'uploaded_at'  => date('Y-m-d H:i:s'),
     ]);
 
-    // Update booking payment status
     db_update('bookings', [
         'payment_status' => 'proof_received',
         'updated_at'     => date('Y-m-d H:i:s'),
     ], ['id' => $booking_id]);
 
-    // Create notification for admin
     send_notification('proof_received', [
         'title'      => 'Preuve de paiement reçue',
         'message'    => "Preuve de paiement reçue pour la réservation #{$booking['reference']}",
