@@ -4,24 +4,26 @@ require_once __DIR__ . '/../includes/functions.php';
 require_once __DIR__ . '/../includes/db.php';
 require_login();
 
-// Extract booking ID from URL: /admin/bookings/view/{id}
-$uri_parts = explode('/', trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/'));
-$booking_id = 0;
-foreach ($uri_parts as $i => $part) {
-    if ($part === 'view' && isset($uri_parts[$i+1])) {
-        $booking_id = (int)$uri_parts[$i+1];
-        break;
+// Support both ?id= parameter and /view/{id} path
+$booking_id = (int)($_GET['id'] ?? 0);
+if (!$booking_id) {
+    $uri_parts = explode('/', trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/'));
+    foreach ($uri_parts as $i => $part) {
+        if ($part === 'view' && isset($uri_parts[$i+1])) {
+            $booking_id = (int)$uri_parts[$i+1];
+            break;
+        }
     }
 }
 
 if (!$booking_id) {
-    header('Location: /admin/bookings');
+    header('Location: /admin/bookings.php');
     exit;
 }
 
 $booking = db_fetch(
     "SELECT b.*, h.name as hotel_name, h.slug as hotel_slug, h.code as hotel_code,
-            bs.name as babysitter_name, bs.phone as babysitter_phone
+            bs.full_name as babysitter_name, bs.phone as babysitter_phone
      FROM bookings b
      LEFT JOIN hotels h ON b.hotel_id = h.id
      LEFT JOIN babysitters bs ON b.babysitter_id = bs.id
@@ -30,27 +32,28 @@ $booking = db_fetch(
 );
 
 if (!$booking) {
-    header('Location: /admin/bookings');
+    header('Location: /admin/bookings.php');
     exit;
 }
 
-$children = db_fetch_all("SELECT * FROM children WHERE booking_id = ? ORDER BY id", [$booking_id]);
-$proofs   = db_fetch_all("SELECT * FROM payment_proofs WHERE booking_id = ? ORDER BY created_at DESC", [$booking_id]);
+$children = db_fetch_all("SELECT * FROM booking_children WHERE booking_id = ? ORDER BY sort_order, id", [$booking_id]);
+$proofs   = db_fetch_all("SELECT * FROM payment_proofs WHERE booking_id = ? ORDER BY id DESC", [$booking_id]);
 $history  = db_fetch_all(
-    "SELECT wh.*, b.reference FROM whatsapp_history wh LEFT JOIN bookings b ON wh.booking_id=b.id WHERE wh.booking_id=? ORDER BY wh.sent_at DESC",
+    "SELECT * FROM whatsapp_history WHERE booking_id = ? ORDER BY sent_at DESC",
     [$booking_id]
 );
 $activity = db_fetch_all(
-    "SELECT al.*, a.username FROM activity_log al LEFT JOIN admins a ON al.admin_id=a.id WHERE al.booking_id=? ORDER BY al.created_at DESC",
+    "SELECT al.*, a.username FROM activity_logs al LEFT JOIN admins a ON al.admin_id = a.id WHERE al.booking_id = ? ORDER BY al.created_at DESC",
     [$booking_id]
 );
 
-$babysitters = db_fetch_all("SELECT id, name FROM babysitters WHERE is_active=1 ORDER BY name");
+$babysitters = db_fetch_all("SELECT id, full_name FROM babysitters WHERE is_active = 1 ORDER BY full_name");
 
 $admin_wa = get_setting('admin_whatsapp', '+212600000000');
 $base_url = defined('BASE_URL') ? BASE_URL : '';
 
 $status_labels = [
+    'new'        => 'Nouvelle',
     'pending'    => 'En attente',
     'confirmed'  => 'Confirmée',
     'in_progress'=> 'En cours',
@@ -58,6 +61,7 @@ $status_labels = [
     'cancelled'  => 'Annulée',
 ];
 $status_colors = [
+    'new'        => 'info',
     'pending'    => 'warning',
     'confirmed'  => 'success',
     'in_progress'=> 'info',
@@ -65,12 +69,12 @@ $status_colors = [
     'cancelled'  => 'danger',
 ];
 $payment_labels = [
-    'not_required'   => 'Non requis',
-    'pending'        => 'En attente',
-    'requested'      => 'Demandé',
-    'proof_uploaded' => 'Preuve envoyée',
-    'validated'      => 'Validé',
-    'refused'        => 'Refusé',
+    'not_required' => 'Non requis',
+    'pending'      => 'En attente',
+    'requested'    => 'Demandé',
+    'proof_sent'   => 'Preuve envoyée',
+    'validated'    => 'Validé',
+    'refused'      => 'Refusé',
 ];
 
 $page_title = 'Réservation ' . $booking['reference'];
@@ -80,7 +84,7 @@ include __DIR__ . '/layout-top.php';
 
 <div class="fk-content-header">
   <div class="fk-content-header-left">
-    <a href="/admin/bookings" class="fk-btn fk-btn-ghost fk-btn-sm" style="margin-right:8px">
+    <a href="/admin/bookings.php" class="fk-btn fk-btn-ghost fk-btn-sm" style="margin-right:8px">
       <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
       Retour
     </a>
@@ -117,10 +121,10 @@ include __DIR__ . '/layout-top.php';
           <div class="fk-field-value"><?= sanitize($booking['client_name']) ?></div>
         </div>
         <div>
-          <div class="fk-field-label">Téléphone</div>
+          <div class="fk-field-label">WhatsApp</div>
           <div class="fk-field-value">
-            <a href="<?= htmlspecialchars(get_whatsapp_link($booking['client_phone'], 'Bonjour ' . $booking['client_name'] . ', concernant votre réservation ' . $booking['reference'] . '...')) ?>" target="_blank" class="fk-link-green">
-              <?= sanitize($booking['client_phone']) ?>
+            <a href="<?= htmlspecialchars(get_whatsapp_link($booking['client_whatsapp'], 'Bonjour ' . $booking['client_name'] . ', concernant votre réservation ' . $booking['reference'] . '...')) ?>" target="_blank" class="fk-link-green">
+              <?= sanitize($booking['client_whatsapp']) ?>
             </a>
           </div>
         </div>
@@ -132,7 +136,7 @@ include __DIR__ . '/layout-top.php';
         <?php endif; ?>
         <div>
           <div class="fk-field-label">Langue préférée</div>
-          <div class="fk-field-value"><?= strtoupper(sanitize($booking['client_lang'] ?? 'fr')) ?></div>
+          <div class="fk-field-value"><?= strtoupper(sanitize($booking['client_language'] ?? 'fr')) ?></div>
         </div>
       </div>
     </div>
@@ -187,10 +191,10 @@ include __DIR__ . '/layout-top.php';
           <div class="fk-field-value"><?= sanitize($booking['address']) ?></div>
         </div>
         <?php endif; ?>
-        <?php if (!empty($booking['special_requests'])): ?>
+        <?php if (!empty($booking['special_needs'])): ?>
         <div style="grid-column:span 2">
-          <div class="fk-field-label">Demandes spéciales</div>
-          <div class="fk-field-value" style="white-space:pre-line"><?= sanitize($booking['special_requests']) ?></div>
+          <div class="fk-field-label">Besoins spéciaux</div>
+          <div class="fk-field-value" style="white-space:pre-line"><?= sanitize($booking['special_needs']) ?></div>
         </div>
         <?php endif; ?>
       </div>
@@ -217,7 +221,7 @@ include __DIR__ . '/layout-top.php';
           <?php foreach ($children as $i => $child): ?>
           <tr>
             <td><?= $i+1 ?></td>
-            <td><?= sanitize($child['first_name'] ?? '–') ?></td>
+            <td><?= sanitize($child['child_name'] ?? '–') ?></td>
             <td><?= sanitize($child['age'] ?? '–') ?> ans</td>
             <td><?= sanitize($child['allergies'] ?? '–') ?></td>
           </tr>
@@ -245,7 +249,7 @@ include __DIR__ . '/layout-top.php';
           <tr>
             <td style="white-space:nowrap"><?= sanitize(format_date_fr($h['sent_at'])) ?></td>
             <td><span class="fk-badge fk-badge-secondary"><?= sanitize($h['template_key'] ?? 'Manuel') ?></span></td>
-            <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= sanitize(truncate($h['message_text'] ?? '', 80)) ?></td>
+            <td style="max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><?= sanitize(truncate($h['message'] ?? '', 80)) ?></td>
             <td><?= sanitize($h['admin_name'] ?? 'Système') ?></td>
           </tr>
           <?php endforeach; ?>
@@ -301,15 +305,15 @@ include __DIR__ . '/layout-top.php';
     <div class="fk-card-body">
       <div style="display:flex;flex-direction:column;gap:8px">
         <?php if ($booking['status'] === 'pending'): ?>
-        <button class="fk-btn fk-btn-success fk-btn-block" onclick="setStatus(<?= $booking_id ?>, 'confirmed')">✓ Confirmer la réservation</button>
-        <button class="fk-btn fk-btn-danger fk-btn-block" onclick="setStatus(<?= $booking_id ?>, 'cancelled')">✕ Annuler la réservation</button>
+        <button class="fk-btn fk-btn-success fk-btn-block" onclick="setStatus(<?= $booking_id ?>, 'confirmed')">&#10003; Confirmer la réservation</button>
+        <button class="fk-btn fk-btn-danger fk-btn-block" onclick="setStatus(<?= $booking_id ?>, 'cancelled')">&#10005; Annuler la réservation</button>
         <?php elseif ($booking['status'] === 'confirmed'): ?>
-        <button class="fk-btn fk-btn-info fk-btn-block" onclick="setStatus(<?= $booking_id ?>, 'in_progress')">▶ Marquer en cours</button>
-        <button class="fk-btn fk-btn-danger fk-btn-block" onclick="setStatus(<?= $booking_id ?>, 'cancelled')">✕ Annuler</button>
+        <button class="fk-btn fk-btn-info fk-btn-block" onclick="setStatus(<?= $booking_id ?>, 'in_progress')">&#9654; Marquer en cours</button>
+        <button class="fk-btn fk-btn-danger fk-btn-block" onclick="setStatus(<?= $booking_id ?>, 'cancelled')">&#10005; Annuler</button>
         <?php elseif ($booking['status'] === 'in_progress'): ?>
-        <button class="fk-btn fk-btn-success fk-btn-block" onclick="setStatus(<?= $booking_id ?>, 'completed')">✓ Marquer terminée</button>
+        <button class="fk-btn fk-btn-success fk-btn-block" onclick="setStatus(<?= $booking_id ?>, 'completed')">&#10003; Marquer terminée</button>
         <?php elseif ($booking['status'] === 'completed'): ?>
-        <div class="fk-badge fk-badge-success" style="display:block;text-align:center;padding:10px">✓ Prestation terminée</div>
+        <div class="fk-badge fk-badge-success" style="display:block;text-align:center;padding:10px">&#10003; Prestation terminée</div>
         <?php elseif ($booking['status'] === 'cancelled'): ?>
         <div class="fk-badge fk-badge-danger" style="display:block;text-align:center;padding:10px">Réservation annulée</div>
         <?php endif; ?>
@@ -321,8 +325,8 @@ include __DIR__ . '/layout-top.php';
   <div class="fk-card" style="margin-bottom:16px">
     <div class="fk-card-header"><h3 class="fk-card-title">💰 Tarification</h3></div>
     <div class="fk-card-body">
-      <?php if (!empty($booking['price_amount'])): ?>
-      <div style="font-size:28px;font-weight:700;color:#059669;text-align:center;margin-bottom:8px"><?= format_price($booking['price_amount']) ?></div>
+      <?php if (!empty($booking['final_price'])): ?>
+      <div style="font-size:28px;font-weight:700;color:#059669;text-align:center;margin-bottom:8px"><?= format_price($booking['final_price']) ?></div>
       <div style="font-size:12px;color:#6B7A72;text-align:center;margin-bottom:16px">
         <?= sanitize($payment_labels[$booking['payment_status']] ?? '–') ?>
       </div>
@@ -332,7 +336,7 @@ include __DIR__ . '/layout-top.php';
       <form id="priceForm" onsubmit="savePrice(event)">
         <div class="fk-field" style="margin-bottom:10px">
           <label class="fk-label">Montant (DH)</label>
-          <input type="number" class="fk-input" name="price_amount" value="<?= (float)($booking['price_amount'] ?? 0) ?>" min="0" step="0.01">
+          <input type="number" class="fk-input" name="final_price" value="<?= (float)($booking['final_price'] ?? 0) ?>" min="0" step="0.01">
         </div>
         <div class="fk-field" style="margin-bottom:10px">
           <label class="fk-label">Statut paiement</label>
@@ -363,7 +367,7 @@ include __DIR__ . '/layout-top.php';
           <select class="fk-select" name="babysitter_id">
             <option value="">– Aucune assignée –</option>
             <?php foreach ($babysitters as $bs): ?>
-            <option value="<?= $bs['id'] ?>" <?= $booking['babysitter_id']==$bs['id']?'selected':'' ?>><?= sanitize($bs['name']) ?></option>
+            <option value="<?= $bs['id'] ?>" <?= $booking['babysitter_id']==$bs['id']?'selected':'' ?>><?= sanitize($bs['full_name']) ?></option>
             <?php endforeach; ?>
           </select>
         </div>
@@ -375,13 +379,13 @@ include __DIR__ . '/layout-top.php';
   <!-- Payment Proof -->
   <?php if ($proofs): ?>
   <div class="fk-card" style="margin-bottom:16px">
-    <div class="fk-card-header"><h3 class="fk-card-title">🧾 Preuves de paiement (<?= count($proofs) ?>)</h3></div>
+    <div class="fk-card-header"><h3 class="fk-card-title">🧧 Preuves de paiement (<?= count($proofs) ?>)</h3></div>
     <div class="fk-card-body">
       <?php foreach ($proofs as $proof): ?>
       <div style="border:1px solid #E5EDE9;border-radius:8px;padding:12px;margin-bottom:10px">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
-          <span style="font-size:13px;font-weight:600;color:#1A2E24"><?= sanitize($proof['original_name'] ?? $proof['filename']) ?></span>
-          <a href="<?= htmlspecialchars($proof['file_url']) ?>" target="_blank" class="fk-btn fk-btn-ghost fk-btn-sm">Voir</a>
+          <span style="font-size:13px;font-weight:600;color:#1A2E24"><?= sanitize($proof['file_name'] ?? 'Fichier') ?></span>
+          <a href="<?= htmlspecialchars($proof['file_path'] ?? '') ?>" target="_blank" class="fk-btn fk-btn-ghost fk-btn-sm">Voir</a>
         </div>
         <div style="font-size:12px;color:#6B7A72"><?= sanitize(format_date_fr($proof['created_at'])) ?></div>
         <?php if (!empty($proof['notes'])): ?>
@@ -389,8 +393,8 @@ include __DIR__ . '/layout-top.php';
         <?php endif; ?>
         <?php if (($booking['payment_status'] ?? '') !== 'validated'): ?>
         <div style="display:flex;gap:6px;margin-top:8px">
-          <button class="fk-btn fk-btn-success fk-btn-sm" onclick="validateProof(<?= $proof['id'] ?>, <?= $booking_id ?>)">✓ Valider</button>
-          <button class="fk-btn fk-btn-danger fk-btn-sm" onclick="refuseProof(<?= $proof['id'] ?>, <?= $booking_id ?>)">✕ Refuser</button>
+          <button class="fk-btn fk-btn-success fk-btn-sm" onclick="validateProof(<?= $proof['id'] ?>, <?= $booking_id ?>)">&#10003; Valider</button>
+          <button class="fk-btn fk-btn-danger fk-btn-sm" onclick="refuseProof(<?= $proof['id'] ?>, <?= $booking_id ?>)">&#10005; Refuser</button>
         </div>
         <?php endif; ?>
       </div>
@@ -417,8 +421,8 @@ include __DIR__ . '/layout-top.php';
     <div class="fk-card-header"><h3 class="fk-card-title">📝 Notes internes</h3></div>
     <div class="fk-card-body">
       <form id="notesForm" onsubmit="saveNotes(event)">
-        <textarea class="fk-input" name="notes" rows="5" style="resize:vertical;font-family:inherit"
-          placeholder="Notes visibles uniquement par l'équipe..."><?= sanitize($booking['notes'] ?? '') ?></textarea>
+        <textarea class="fk-input" name="internal_notes" rows="5" style="resize:vertical;font-family:inherit"
+          placeholder="Notes visibles uniquement par l'équipe..."><?= sanitize($booking['internal_notes'] ?? '') ?></textarea>
         <button type="submit" class="fk-btn fk-btn-primary fk-btn-block" style="margin-top:10px">Enregistrer</button>
       </form>
     </div>
@@ -446,7 +450,7 @@ async function savePrice(e) {
     const fd = new FormData(e.target);
     const r = await FK.post('/api/bookings?action=set_price', {
         id: BOOKING_ID,
-        price_amount: fd.get('price_amount'),
+        final_price: fd.get('final_price'),
         payment_status: fd.get('payment_status')
     });
     if (r.success) FK.toast('Tarif enregistré','success');
@@ -467,7 +471,7 @@ async function saveBabysitter(e) {
 async function saveNotes(e) {
     e.preventDefault();
     const fd = new FormData(e.target);
-    const r = await FK.post('/api/bookings?action=update', {id: BOOKING_ID, notes: fd.get('notes')});
+    const r = await FK.post('/api/bookings?action=update', {id: BOOKING_ID, internal_notes: fd.get('internal_notes')});
     if (r.success) FK.toast('Notes enregistrées','success');
     else FK.toast(r.error||'Erreur','error');
 }
