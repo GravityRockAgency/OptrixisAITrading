@@ -98,7 +98,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         log_activity('Réservation manuelle créée', "Référence: $reference | Client: $client_name", $booking_id);
-        header("Location: /admin/bookings/view/$booking_id");
+        header("Location: /admin/booking-detail.php?id=$booking_id");
         exit;
     }
 }
@@ -110,7 +110,7 @@ include 'layout-top.php';
     <h1 class="fk-page-title"><?= sanitize($page_title) ?></h1>
     <p class="fk-page-subtitle"><?= sanitize($page_subtitle) ?></p>
   </div>
-  <a href="/admin/bookings" class="fk-btn fk-btn-secondary">← Réservations</a>
+  <a href="/admin/bookings.php" class="fk-btn fk-btn-secondary">← Réservations</a>
 </div>
 
 <?php if ($errors): ?>
@@ -374,7 +374,6 @@ include 'layout-top.php';
 </style>
 
 <script>
-// Init type toggle
 document.addEventListener('DOMContentLoaded', function() {
   const typeRadios = document.querySelectorAll('input[name="type"]');
   typeRadios.forEach(r => r.addEventListener('change', () => toggleType(r.value)));

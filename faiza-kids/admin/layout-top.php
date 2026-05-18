@@ -1,20 +1,18 @@
 <?php
 /**
  * Faiza Kids Concierge — Admin Layout Top
- * Included by every admin page BEFORE page content.
- * Expects: $page_title (string), $page_subtitle (string, optional)
- *          $extra_css  (string, optional – raw <style> or <link> tags)
  */
 
-// Resolve active nav item based on current URL path
 $current_path = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
 $current_path = rtrim($current_path, '/') ?: '/admin';
 
 function fk_nav_active(string $href, string $current): string {
-    $norm = rtrim($href, '/') ?: '/admin';
-    // Exact match, or current path starts with href (for sub-pages)
-    if ($current === $norm) return ' fk-nav-active';
-    if ($norm !== '/admin' && str_starts_with($current, $norm)) return ' fk-nav-active';
+    // Normalize both sides by stripping .php extension
+    $current_norm = preg_replace('/\.php$/', '', $current);
+    $href_norm    = preg_replace('/\.php$/', '', rtrim($href, '/')) ?: '/admin';
+    if ($current_norm === $href_norm) return ' fk-nav-active';
+    if ($href_norm !== '/admin' && str_starts_with($current_norm, $href_norm)) return ' fk-nav-active';
+    if ($href_norm === '/admin' && $current_norm === '/admin/dashboard') return ' fk-nav-active';
     return '';
 }
 
@@ -23,7 +21,6 @@ $admin_name = $admin_data['full_name'] ?? ($_SESSION['admin_name'] ?? 'Admin');
 $admin_email = $admin_data['email'] ?? ($_SESSION['admin_email'] ?? '');
 $admin_initial = mb_strtoupper(mb_substr($admin_name, 0, 1));
 
-// Unread notifications count
 $notif_count = 0;
 try {
     $notif_row = db_fetch("SELECT COUNT(*) as cnt FROM notifications WHERE is_read = 0", []);
@@ -42,21 +39,17 @@ $extra_css     = $extra_css     ?? '';
     <meta name="robots" content="noindex, nofollow">
     <title><?= htmlspecialchars($page_title, ENT_QUOTES) ?> | Faiza Kids Concierge</title>
 
-    <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
-    <!-- App Design System -->
     <link rel="stylesheet" href="/assets/css/app.css">
 
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" defer></script>
 
     <?= $extra_css ?>
 
     <style>
-        /* ─── CSS Custom Properties ──────────────────────────────── */
         :root {
             --fk-sidebar-bg:      #0D2B1D;
             --fk-sidebar-active:  #2D6A4F;
@@ -78,7 +71,6 @@ $extra_css     = $extra_css     ?? '';
             --fk-shadow-md:       0 4px 16px rgba(0,0,0,.10);
         }
 
-        /* ─── Reset & Base ───────────────────────────────────────── */
         *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
         html { font-size: 15px; }
         body.fk-admin {
@@ -89,13 +81,8 @@ $extra_css     = $extra_css     ?? '';
             overflow-x: hidden;
         }
 
-        /* ─── Shell ──────────────────────────────────────────────── */
-        .fk-shell {
-            display: flex;
-            min-height: 100vh;
-        }
+        .fk-shell { display: flex; min-height: 100vh; }
 
-        /* ─── Sidebar ────────────────────────────────────────────── */
         .fk-sidebar {
             width: var(--fk-sidebar-width);
             background: var(--fk-sidebar-bg);
@@ -113,11 +100,8 @@ $extra_css     = $extra_css     ?? '';
         .fk-sidebar::-webkit-scrollbar { width: 4px; }
         .fk-sidebar::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1); border-radius: 2px; }
 
-        /* Logo */
         .fk-sidebar-logo {
-            display: flex;
-            align-items: center;
-            gap: 12px;
+            display: flex; align-items: center; gap: 12px;
             padding: 22px 20px 20px;
             border-bottom: 1px solid rgba(255,255,255,.07);
             text-decoration: none;
@@ -132,316 +116,98 @@ $extra_css     = $extra_css     ?? '';
             box-shadow: 0 2px 8px rgba(82,183,136,.4);
         }
         .fk-logo-text { line-height: 1.2; }
-        .fk-logo-text strong {
-            display: block;
-            font-size: .9rem;
-            font-weight: 700;
-            color: #FFFFFF;
-            letter-spacing: -.01em;
-        }
-        .fk-logo-text span {
-            font-size: .68rem;
-            color: var(--fk-gold);
-            font-weight: 500;
-            letter-spacing: .05em;
-            text-transform: uppercase;
-        }
+        .fk-logo-text strong { display: block; font-size: .9rem; font-weight: 700; color: #FFFFFF; letter-spacing: -.01em; }
+        .fk-logo-text span { font-size: .68rem; color: var(--fk-gold); font-weight: 500; letter-spacing: .05em; text-transform: uppercase; }
 
-        /* Nav */
-        .fk-nav {
-            flex: 1;
-            padding: 14px 12px;
-        }
-        .fk-nav-section {
-            margin-bottom: 6px;
-        }
-        .fk-nav-section-label {
-            font-size: .62rem;
-            font-weight: 600;
-            color: rgba(255,255,255,.3);
-            letter-spacing: .1em;
-            text-transform: uppercase;
-            padding: 10px 10px 6px;
-        }
+        .fk-nav { flex: 1; padding: 14px 12px; }
+        .fk-nav-section { margin-bottom: 6px; }
+        .fk-nav-section-label { font-size: .62rem; font-weight: 600; color: rgba(255,255,255,.3); letter-spacing: .1em; text-transform: uppercase; padding: 10px 10px 6px; }
         .fk-nav-item {
-            display: flex;
-            align-items: center;
-            gap: 11px;
-            padding: 9px 12px;
-            border-radius: 9px;
-            text-decoration: none;
-            color: var(--fk-sidebar-text);
-            font-size: .82rem;
-            font-weight: 500;
+            display: flex; align-items: center; gap: 11px;
+            padding: 9px 12px; border-radius: 9px;
+            text-decoration: none; color: var(--fk-sidebar-text);
+            font-size: .82rem; font-weight: 500;
             transition: background .18s, color .18s;
-            margin-bottom: 2px;
-            position: relative;
-            white-space: nowrap;
+            margin-bottom: 2px; position: relative; white-space: nowrap;
         }
-        .fk-nav-item:hover {
-            background: var(--fk-sidebar-hover);
-            color: var(--fk-sidebar-text-active);
-        }
-        .fk-nav-item.fk-nav-active {
-            background: var(--fk-sidebar-active);
-            color: var(--fk-sidebar-text-active);
-            font-weight: 600;
-        }
+        .fk-nav-item:hover { background: var(--fk-sidebar-hover); color: var(--fk-sidebar-text-active); }
+        .fk-nav-item.fk-nav-active { background: var(--fk-sidebar-active); color: var(--fk-sidebar-text-active); font-weight: 600; }
         .fk-nav-item.fk-nav-active::before {
-            content: '';
-            position: absolute;
-            left: -12px;
-            top: 50%; transform: translateY(-50%);
-            width: 3px; height: 22px;
-            background: #52B788;
-            border-radius: 0 3px 3px 0;
+            content: ''; position: absolute; left: -12px; top: 50%; transform: translateY(-50%);
+            width: 3px; height: 22px; background: #52B788; border-radius: 0 3px 3px 0;
         }
-        .fk-nav-icon {
-            width: 18px; height: 18px;
-            flex-shrink: 0;
-            opacity: .8;
-        }
+        .fk-nav-icon { width: 18px; height: 18px; flex-shrink: 0; opacity: .8; }
         .fk-nav-active .fk-nav-icon { opacity: 1; }
 
-        /* Sidebar footer */
-        .fk-sidebar-footer {
-            padding: 14px 16px;
-            border-top: 1px solid rgba(255,255,255,.07);
-        }
-        .fk-sidebar-user {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+        .fk-sidebar-footer { padding: 14px 16px; border-top: 1px solid rgba(255,255,255,.07); }
+        .fk-sidebar-user { display: flex; align-items: center; gap: 10px; }
         .fk-sidebar-avatar {
-            width: 34px; height: 34px;
-            background: var(--fk-sidebar-active);
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: .8rem; font-weight: 700; color: #fff;
-            flex-shrink: 0;
+            width: 34px; height: 34px; background: var(--fk-sidebar-active);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: .8rem; font-weight: 700; color: #fff; flex-shrink: 0;
         }
         .fk-sidebar-user-info { flex: 1; min-width: 0; }
-        .fk-sidebar-user-name {
-            font-size: .78rem; font-weight: 600;
-            color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-        }
-        .fk-sidebar-logout {
-            font-size: .7rem;
-            color: rgba(255,255,255,.45);
-            text-decoration: none;
-            display: block;
-            margin-top: 1px;
-        }
+        .fk-sidebar-user-name { font-size: .78rem; font-weight: 600; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .fk-sidebar-logout { font-size: .7rem; color: rgba(255,255,255,.45); text-decoration: none; display: block; margin-top: 1px; }
         .fk-sidebar-logout:hover { color: #fc8181; }
 
-        /* ─── Main ───────────────────────────────────────────────── */
-        .fk-main {
-            margin-left: var(--fk-sidebar-width);
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            min-width: 0;
-        }
+        .fk-main { margin-left: var(--fk-sidebar-width); flex: 1; display: flex; flex-direction: column; min-height: 100vh; min-width: 0; }
 
-        /* ─── Topbar ─────────────────────────────────────────────── */
         .fk-topbar {
-            height: var(--fk-topbar-h);
-            background: #FFFFFF;
+            height: var(--fk-topbar-h); background: #FFFFFF;
             border-bottom: 1px solid var(--fk-border);
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 0 24px;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            box-shadow: var(--fk-shadow);
+            display: flex; align-items: center; gap: 14px; padding: 0 24px;
+            position: sticky; top: 0; z-index: 100; box-shadow: var(--fk-shadow);
         }
-        .fk-topbar-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            flex: 1;
-            min-width: 0;
-        }
-        .fk-hamburger {
-            display: none;
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 6px;
-            border-radius: 7px;
-            color: var(--fk-muted);
-            transition: background .15s;
-        }
+        .fk-topbar-left { display: flex; align-items: center; gap: 12px; flex: 1; min-width: 0; }
+        .fk-hamburger { display: none; background: none; border: none; cursor: pointer; padding: 6px; border-radius: 7px; color: var(--fk-muted); transition: background .15s; }
         .fk-hamburger:hover { background: var(--fk-light-bg); }
-        .fk-breadcrumb {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: .8rem;
-            color: var(--fk-muted);
-        }
+        .fk-breadcrumb { display: flex; align-items: center; gap: 6px; font-size: .8rem; color: var(--fk-muted); }
         .fk-breadcrumb-sep { opacity: .4; }
-        .fk-breadcrumb-current {
-            font-weight: 600;
-            color: var(--fk-text);
-            font-size: .82rem;
-        }
-        .fk-topbar-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+        .fk-breadcrumb-current { font-weight: 600; color: var(--fk-text); font-size: .82rem; }
+        .fk-topbar-right { display: flex; align-items: center; gap: 10px; }
 
-        /* Search bar */
         .fk-search-bar {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: var(--fk-light-bg);
-            border: 1px solid var(--fk-border);
-            border-radius: 8px;
-            padding: 7px 12px;
-            min-width: 220px;
+            display: flex; align-items: center; gap: 8px;
+            background: var(--fk-light-bg); border: 1px solid var(--fk-border);
+            border-radius: 8px; padding: 7px 12px; min-width: 220px;
             transition: border-color .15s, box-shadow .15s;
         }
-        .fk-search-bar:focus-within {
-            border-color: #52B788;
-            box-shadow: 0 0 0 3px rgba(82,183,136,.12);
-        }
+        .fk-search-bar:focus-within { border-color: #52B788; box-shadow: 0 0 0 3px rgba(82,183,136,.12); }
         .fk-search-bar svg { color: var(--fk-muted); flex-shrink: 0; }
-        .fk-search-bar input {
-            border: none; background: none; outline: none;
-            font-size: .8rem; color: var(--fk-text);
-            font-family: inherit; width: 100%;
-        }
+        .fk-search-bar input { border: none; background: none; outline: none; font-size: .8rem; color: var(--fk-text); font-family: inherit; width: 100%; }
         .fk-search-bar input::placeholder { color: var(--fk-muted); }
 
-        /* Notification bell */
-        .fk-notif-btn {
-            position: relative;
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 8px;
-            border-radius: 9px;
-            color: var(--fk-muted);
-            transition: background .15s, color .15s;
-        }
+        .fk-notif-btn { position: relative; background: none; border: none; cursor: pointer; padding: 8px; border-radius: 9px; color: var(--fk-muted); transition: background .15s, color .15s; }
         .fk-notif-btn:hover { background: var(--fk-light-bg); color: var(--fk-text); }
-        .fk-notif-badge {
-            position: absolute;
-            top: 4px; right: 4px;
-            min-width: 16px; height: 16px;
-            background: #EF4444;
-            border-radius: 8px;
-            font-size: .6rem;
-            font-weight: 700;
-            color: #fff;
-            display: flex; align-items: center; justify-content: center;
-            border: 1.5px solid #fff;
-            padding: 0 3px;
-        }
+        .fk-notif-badge { position: absolute; top: 4px; right: 4px; min-width: 16px; height: 16px; background: #EF4444; border-radius: 8px; font-size: .6rem; font-weight: 700; color: #fff; display: flex; align-items: center; justify-content: center; border: 1.5px solid #fff; padding: 0 3px; }
         .fk-notif-badge:empty, .fk-notif-badge[data-count="0"] { display: none; }
 
-        /* Avatar dropdown */
-        .fk-avatar-wrap {
-            position: relative;
-        }
-        .fk-avatar-btn {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 4px 6px;
-            border-radius: 9px;
-            transition: background .15s;
-        }
+        .fk-avatar-wrap { position: relative; }
+        .fk-avatar-btn { display: flex; align-items: center; gap: 8px; background: none; border: none; cursor: pointer; padding: 4px 6px; border-radius: 9px; transition: background .15s; }
         .fk-avatar-btn:hover { background: var(--fk-light-bg); }
-        .fk-topbar-avatar {
-            width: 34px; height: 34px;
-            background: linear-gradient(135deg, #52B788, #2D6A4F);
-            border-radius: 50%;
-            display: flex; align-items: center; justify-content: center;
-            font-size: .78rem; font-weight: 700; color: #fff;
-        }
-        .fk-avatar-name {
-            font-size: .8rem;
-            font-weight: 600;
-            color: var(--fk-text);
-        }
+        .fk-topbar-avatar { width: 34px; height: 34px; background: linear-gradient(135deg, #52B788, #2D6A4F); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .78rem; font-weight: 700; color: #fff; }
+        .fk-avatar-name { font-size: .8rem; font-weight: 600; color: var(--fk-text); }
         .fk-avatar-caret { color: var(--fk-muted); }
-        .fk-avatar-dropdown {
-            display: none;
-            position: absolute;
-            top: calc(100% + 8px);
-            right: 0;
-            background: #fff;
-            border: 1px solid var(--fk-border);
-            border-radius: 10px;
-            box-shadow: var(--fk-shadow-md);
-            min-width: 200px;
-            z-index: 300;
-            overflow: hidden;
-        }
+        .fk-avatar-dropdown { display: none; position: absolute; top: calc(100% + 8px); right: 0; background: #fff; border: 1px solid var(--fk-border); border-radius: 10px; box-shadow: var(--fk-shadow-md); min-width: 200px; z-index: 300; overflow: hidden; }
         .fk-avatar-dropdown.fk-open { display: block; }
-        .fk-avatar-dropdown-header {
-            padding: 14px 16px 10px;
-            border-bottom: 1px solid var(--fk-border);
-        }
-        .fk-avatar-dropdown-header strong {
-            display: block; font-size: .83rem; font-weight: 600; color: var(--fk-text);
-        }
-        .fk-avatar-dropdown-header span {
-            font-size: .72rem; color: var(--fk-muted);
-        }
-        .fk-dd-item {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            padding: 9px 16px;
-            font-size: .8rem;
-            color: var(--fk-text);
-            text-decoration: none;
-            transition: background .14s;
-        }
+        .fk-avatar-dropdown-header { padding: 14px 16px 10px; border-bottom: 1px solid var(--fk-border); }
+        .fk-avatar-dropdown-header strong { display: block; font-size: .83rem; font-weight: 600; color: var(--fk-text); }
+        .fk-avatar-dropdown-header span { font-size: .72rem; color: var(--fk-muted); }
+        .fk-dd-item { display: flex; align-items: center; gap: 10px; padding: 9px 16px; font-size: .8rem; color: var(--fk-text); text-decoration: none; transition: background .14s; }
         .fk-dd-item:hover { background: var(--fk-light-bg); }
         .fk-dd-item.fk-dd-danger { color: #EF4444; }
         .fk-dd-divider { border: none; border-top: 1px solid var(--fk-border); margin: 4px 0; }
 
-        /* ─── Page Content ───────────────────────────────────────── */
-        .fk-content {
-            flex: 1;
-            padding: 28px 28px 40px;
-            min-width: 0;
-        }
+        .fk-content { flex: 1; padding: 28px 28px 40px; min-width: 0; }
 
-        /* ─── Overlay (mobile sidebar) ───────────────────────────── */
-        .fk-overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,.45);
-            z-index: 190;
-        }
+        .fk-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 190; }
         .fk-overlay.fk-open { display: block; }
 
-        /* ─── Responsive ─────────────────────────────────────────── */
         @media (max-width: 900px) {
-            .fk-sidebar {
-                transform: translateX(-100%);
-            }
-            .fk-sidebar.fk-sidebar-open {
-                transform: translateX(0);
-            }
-            .fk-main {
-                margin-left: 0;
-            }
+            .fk-sidebar { transform: translateX(-100%); }
+            .fk-sidebar.fk-sidebar-open { transform: translateX(0); }
+            .fk-main { margin-left: 0; }
             .fk-hamburger { display: flex; }
             .fk-search-bar { min-width: 160px; }
             .fk-avatar-name { display: none; }
@@ -454,15 +220,12 @@ $extra_css     = $extra_css     ?? '';
 </head>
 <body class="fk-admin">
 
-<!-- Sidebar overlay (mobile) -->
 <div class="fk-overlay" id="fkOverlay" onclick="fkCloseSidebar()"></div>
 
 <div class="fk-shell">
 
-    <!-- ═══════════════════════════ SIDEBAR ═══════════════════════════ -->
     <aside class="fk-sidebar" id="fkSidebar" role="navigation" aria-label="Navigation principale">
 
-        <!-- Logo -->
         <a href="/admin" class="fk-sidebar-logo">
             <div class="fk-logo-circle">F</div>
             <div class="fk-logo-text">
@@ -471,14 +234,12 @@ $extra_css     = $extra_css     ?? '';
             </div>
         </a>
 
-        <!-- Navigation -->
         <nav class="fk-nav">
 
             <div class="fk-nav-section">
                 <p class="fk-nav-section-label">Principal</p>
 
                 <a href="/admin" class="fk-nav-item<?= fk_nav_active('/admin', $current_path) ?>">
-                    <!-- Grid / Dashboard icon -->
                     <svg class="fk-nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                         <rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" fill="none"/>
                         <rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" fill="none"/>
@@ -488,8 +249,7 @@ $extra_css     = $extra_css     ?? '';
                     Tableau de bord
                 </a>
 
-                <a href="/admin/calendar" class="fk-nav-item<?= fk_nav_active('/admin/calendar', $current_path) ?>">
-                    <!-- Calendar icon -->
+                <a href="/admin/calendar.php" class="fk-nav-item<?= fk_nav_active('/admin/calendar.php', $current_path) ?>">
                     <svg class="fk-nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                         <rect x="3" y="4" width="18" height="18" rx="2.5" stroke="currentColor" fill="none"/>
                         <path d="M8 2v4M16 2v4M3 9h18" stroke="currentColor" stroke-linecap="round"/>
@@ -502,16 +262,14 @@ $extra_css     = $extra_css     ?? '';
             <div class="fk-nav-section">
                 <p class="fk-nav-section-label">Réservations</p>
 
-                <a href="/admin/bookings" class="fk-nav-item<?= fk_nav_active('/admin/bookings', $current_path) ?>">
-                    <!-- List icon -->
+                <a href="/admin/bookings.php" class="fk-nav-item<?= fk_nav_active('/admin/bookings.php', $current_path) ?>">
                     <svg class="fk-nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                         <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                     Réservations
                 </a>
 
-                <a href="/admin/manual-booking" class="fk-nav-item<?= fk_nav_active('/admin/manual-booking', $current_path) ?>">
-                    <!-- Plus-circle icon -->
+                <a href="/admin/manual-booking.php" class="fk-nav-item<?= fk_nav_active('/admin/manual-booking.php', $current_path) ?>">
                     <svg class="fk-nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                         <circle cx="12" cy="12" r="9" stroke="currentColor" fill="none"/>
                         <path d="M12 8v8M8 12h8" stroke="currentColor" stroke-linecap="round"/>
@@ -519,8 +277,7 @@ $extra_css     = $extra_css     ?? '';
                     Réservation manuelle
                 </a>
 
-                <a href="/admin/availability" class="fk-nav-item<?= fk_nav_active('/admin/availability', $current_path) ?>">
-                    <!-- Clock icon -->
+                <a href="/admin/availability.php" class="fk-nav-item<?= fk_nav_active('/admin/availability.php', $current_path) ?>">
                     <svg class="fk-nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                         <circle cx="12" cy="12" r="9" stroke="currentColor" fill="none"/>
                         <path d="M12 7v5l3 3" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
@@ -532,8 +289,7 @@ $extra_css     = $extra_css     ?? '';
             <div class="fk-nav-section">
                 <p class="fk-nav-section-label">Gestion</p>
 
-                <a href="/admin/hotels" class="fk-nav-item<?= fk_nav_active('/admin/hotels', $current_path) ?>">
-                    <!-- Building icon -->
+                <a href="/admin/hotels.php" class="fk-nav-item<?= fk_nav_active('/admin/hotels.php', $current_path) ?>">
                     <svg class="fk-nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                         <path d="M3 21V8l9-5 9 5v13H3z" stroke="currentColor" stroke-linejoin="round" fill="none"/>
                         <path d="M9 21v-6h6v6" stroke="currentColor" stroke-linejoin="round"/>
@@ -542,8 +298,7 @@ $extra_css     = $extra_css     ?? '';
                     Hôtels
                 </a>
 
-                <a href="/admin/babysitters" class="fk-nav-item<?= fk_nav_active('/admin/babysitters', $current_path) ?>">
-                    <!-- User-group icon -->
+                <a href="/admin/babysitters.php" class="fk-nav-item<?= fk_nav_active('/admin/babysitters.php', $current_path) ?>">
                     <svg class="fk-nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                         <circle cx="9" cy="7" r="3" stroke="currentColor" fill="none"/>
                         <path d="M3 20c0-3.314 2.686-6 6-6s6 2.686 6 6" stroke="currentColor" stroke-linecap="round" fill="none"/>
@@ -553,8 +308,7 @@ $extra_css     = $extra_css     ?? '';
                     Babysitters
                 </a>
 
-                <a href="/admin/whatsapp" class="fk-nav-item<?= fk_nav_active('/admin/whatsapp', $current_path) ?>">
-                    <!-- Chat icon -->
+                <a href="/admin/whatsapp.php" class="fk-nav-item<?= fk_nav_active('/admin/whatsapp.php', $current_path) ?>">
                     <svg class="fk-nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                         <path d="M21 11.5C21 16.19 16.97 20 12 20a9.25 9.25 0 01-4.255-1.03L3 20l1.073-4.596A8.748 8.748 0 013 11.5C3 6.81 7.03 3 12 3s9 3.81 9 8.5z" stroke="currentColor" fill="none" stroke-linejoin="round"/>
                     </svg>
@@ -565,8 +319,7 @@ $extra_css     = $extra_css     ?? '';
             <div class="fk-nav-section">
                 <p class="fk-nav-section-label">Finance & Analyse</p>
 
-                <a href="/admin/payments" class="fk-nav-item<?= fk_nav_active('/admin/payments', $current_path) ?>">
-                    <!-- Credit-card icon -->
+                <a href="/admin/payments.php" class="fk-nav-item<?= fk_nav_active('/admin/payments.php', $current_path) ?>">
                     <svg class="fk-nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                         <rect x="2" y="5" width="20" height="14" rx="2.5" stroke="currentColor" fill="none"/>
                         <path d="M2 10h20" stroke="currentColor" stroke-linecap="round"/>
@@ -575,16 +328,14 @@ $extra_css     = $extra_css     ?? '';
                     Paiements
                 </a>
 
-                <a href="/admin/reports" class="fk-nav-item<?= fk_nav_active('/admin/reports', $current_path) ?>">
-                    <!-- Chart-bar icon -->
+                <a href="/admin/reports.php" class="fk-nav-item<?= fk_nav_active('/admin/reports.php', $current_path) ?>">
                     <svg class="fk-nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                         <path d="M3 20h18M8 20V10M12 20V4M16 20v-7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
                     Rapports
                 </a>
 
-                <a href="/admin/qr" class="fk-nav-item<?= fk_nav_active('/admin/qr', $current_path) ?>">
-                    <!-- QR code icon -->
+                <a href="/admin/qr.php" class="fk-nav-item<?= fk_nav_active('/admin/qr.php', $current_path) ?>">
                     <svg class="fk-nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                         <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" fill="none"/>
                         <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" fill="none"/>
@@ -598,8 +349,7 @@ $extra_css     = $extra_css     ?? '';
             <div class="fk-nav-section">
                 <p class="fk-nav-section-label">Système</p>
 
-                <a href="/admin/settings" class="fk-nav-item<?= fk_nav_active('/admin/settings', $current_path) ?>">
-                    <!-- Cog icon -->
+                <a href="/admin/settings.php" class="fk-nav-item<?= fk_nav_active('/admin/settings.php', $current_path) ?>">
                     <svg class="fk-nav-icon" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                         <circle cx="12" cy="12" r="3" stroke="currentColor" fill="none"/>
                         <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-2 2 2 2 0 01-2-2v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 01-2-2 2 2 0 012-2h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 012-2 2 2 0 012 2v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 012 2 2 2 0 01-2 2h-.09a1.65 1.65 0 00-1.51 1z" stroke="currentColor" fill="none"/>
@@ -610,34 +360,27 @@ $extra_css     = $extra_css     ?? '';
 
         </nav>
 
-        <!-- Sidebar footer: admin info + logout -->
         <div class="fk-sidebar-footer">
             <div class="fk-sidebar-user">
                 <div class="fk-sidebar-avatar"><?= htmlspecialchars($admin_initial, ENT_QUOTES) ?></div>
                 <div class="fk-sidebar-user-info">
                     <div class="fk-sidebar-user-name" title="<?= htmlspecialchars($admin_name, ENT_QUOTES) ?>"><?= htmlspecialchars($admin_name, ENT_QUOTES) ?></div>
-                    <a href="/admin/logout" class="fk-sidebar-logout">Déconnexion</a>
+                    <a href="/admin/logout.php" class="fk-sidebar-logout">Déconnexion</a>
                 </div>
             </div>
         </div>
 
     </aside>
-    <!-- END SIDEBAR -->
 
-    <!-- ═══════════════════════════ MAIN ═══════════════════════════ -->
     <div class="fk-main">
 
-        <!-- ────────────────────── TOPBAR ────────────────────── -->
         <header class="fk-topbar">
             <div class="fk-topbar-left">
-                <!-- Hamburger (mobile) -->
                 <button class="fk-hamburger" id="fkHamburger" onclick="fkOpenSidebar()" aria-label="Ouvrir le menu">
                     <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round"/>
                     </svg>
                 </button>
-
-                <!-- Breadcrumb -->
                 <nav class="fk-breadcrumb" aria-label="Fil d'ariane">
                     <a href="/admin" style="text-decoration:none;color:inherit;">Faiza Kids</a>
                     <span class="fk-breadcrumb-sep">›</span>
@@ -646,7 +389,6 @@ $extra_css     = $extra_css     ?? '';
             </div>
 
             <div class="fk-topbar-right">
-                <!-- Search -->
                 <div class="fk-search-bar" role="search">
                     <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
                         <circle cx="11" cy="11" r="7"/>
@@ -655,7 +397,6 @@ $extra_css     = $extra_css     ?? '';
                     <input type="search" placeholder="Rechercher une réservation, client…" aria-label="Recherche globale">
                 </div>
 
-                <!-- Notifications -->
                 <button class="fk-notif-btn" id="fkNotifBtn" aria-label="Notifications" onclick="fkToggleNotifications()">
                     <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" aria-hidden="true">
                         <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
@@ -666,7 +407,6 @@ $extra_css     = $extra_css     ?? '';
                     <?php endif; ?>
                 </button>
 
-                <!-- Avatar dropdown -->
                 <div class="fk-avatar-wrap" id="fkAvatarWrap">
                     <button class="fk-avatar-btn" onclick="fkToggleAvatarDropdown()" aria-haspopup="true" aria-expanded="false" aria-controls="fkAvatarDropdown">
                         <div class="fk-topbar-avatar"><?= htmlspecialchars($admin_initial, ENT_QUOTES) ?></div>
@@ -680,25 +420,22 @@ $extra_css     = $extra_css     ?? '';
                             <strong><?= htmlspecialchars($admin_name, ENT_QUOTES) ?></strong>
                             <span><?= htmlspecialchars($admin_email, ENT_QUOTES) ?></span>
                         </div>
-                        <a href="/admin/profile" class="fk-dd-item" role="menuitem">
+                        <a href="/admin/profile.php" class="fk-dd-item" role="menuitem">
                             <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.582-7 8-7s8 3 8 7" stroke-linecap="round"/></svg>
                             Mon profil
                         </a>
-                        <a href="/admin/settings" class="fk-dd-item" role="menuitem">
+                        <a href="/admin/settings.php" class="fk-dd-item" role="menuitem">
                             <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06A1.65 1.65 0 0015 19.4a1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
                             Paramètres
                         </a>
                         <hr class="fk-dd-divider">
-                        <a href="/admin/logout" class="fk-dd-item fk-dd-danger" role="menuitem">
+                        <a href="/admin/logout.php" class="fk-dd-item fk-dd-danger" role="menuitem">
                             <svg width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" stroke-linecap="round" stroke-linejoin="round"/></svg>
                             Déconnexion
                         </a>
                     </div>
                 </div>
-                <!-- END Avatar dropdown -->
             </div>
         </header>
-        <!-- END TOPBAR -->
 
-        <!-- ────────────────────── PAGE CONTENT ────────────────────── -->
         <div class="fk-content">
