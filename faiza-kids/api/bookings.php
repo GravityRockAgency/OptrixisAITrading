@@ -1,7 +1,6 @@
 <?php
 /**
  * Faiza Kids Concierge — Bookings API
- * Handles all booking management operations
  */
 
 require_once __DIR__ . '/../includes/db.php';
@@ -31,34 +30,27 @@ function json_error(string $message, int $code = 400): void {
     exit;
 }
 
-// ── Route dispatcher ──────────────────────────────────────────────────────────
-
 match (true) {
-    $method === 'GET'  && $action === 'list'             => action_list(),
-    $method === 'GET'  && $action === 'get'              => action_get(),
-    $method === 'GET'  && $action === 'today'            => action_today(),
-    $method === 'GET'  && $action === 'calendar'         => action_calendar(),
-    $method === 'GET'  && $action === 'stats'            => action_stats(),
-    $method === 'GET'  && $action === 'export'           => action_export(),
-    $method === 'POST' && $action === 'create'           => action_create(),
-    $method === 'POST' && $action === 'update'           => action_update(),
-    $method === 'POST' && $action === 'status'           => action_status(),
-    $method === 'POST' && $action === 'confirm'          => action_confirm(),
-    $method === 'POST' && $action === 'cancel'           => action_cancel(),
-    $method === 'POST' && $action === 'complete'         => action_complete(),
+    $method === 'GET'  && $action === 'list'              => action_list(),
+    $method === 'GET'  && $action === 'get'               => action_get(),
+    $method === 'GET'  && $action === 'today'             => action_today(),
+    $method === 'GET'  && $action === 'calendar'          => action_calendar(),
+    $method === 'GET'  && $action === 'stats'             => action_stats(),
+    $method === 'GET'  && $action === 'export'            => action_export(),
+    $method === 'POST' && $action === 'create'            => action_create(),
+    $method === 'POST' && $action === 'update'            => action_update(),
+    $method === 'POST' && $action === 'status'            => action_status(),
+    $method === 'POST' && $action === 'confirm'           => action_confirm(),
+    $method === 'POST' && $action === 'cancel'            => action_cancel(),
+    $method === 'POST' && $action === 'complete'          => action_complete(),
     $method === 'POST' && $action === 'assign_babysitter' => action_assign_babysitter(),
-    $method === 'POST' && $action === 'set_price'        => action_set_price(),
-    $method === 'POST' && $action === 'request_payment'  => action_request_payment(),
-    $method === 'POST' && $action === 'validate_payment' => action_validate_payment(),
-    $method === 'POST' && $action === 'refuse_payment'   => action_refuse_payment(),
-    default                                              => json_error('Action non reconnue', 404),
+    $method === 'POST' && $action === 'set_price'         => action_set_price(),
+    $method === 'POST' && $action === 'request_payment'   => action_request_payment(),
+    $method === 'POST' && $action === 'validate_payment'  => action_validate_payment(),
+    $method === 'POST' && $action === 'refuse_payment'    => action_refuse_payment(),
+    default                                               => json_error('Action non reconnue', 404),
 };
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-/**
- * Build the shared booking SELECT with hotel/babysitter JOINs.
- */
 function booking_base_sql(): string {
     return "SELECT b.*,
                    h.name        AS hotel_name,
@@ -72,25 +64,19 @@ function booking_base_sql(): string {
             LEFT JOIN babysitters bs ON bs.id = b.babysitter_id";
 }
 
-/**
- * Fetch children for a booking.
- */
 function get_booking_children(int $booking_id): array {
     return db_fetch_all(
-        "SELECT * FROM booking_children WHERE booking_id = ? ORDER BY id ASC",
+        "SELECT * FROM booking_children WHERE booking_id = ? ORDER BY sort_order, id ASC",
         [$booking_id]
     );
 }
 
-/**
- * Apply common list filters, returning [sql_conditions, params].
- */
 function build_list_filters(array $get): array {
     $conditions = ['1=1'];
     $params     = [];
 
     if (!empty($get['type'])) {
-        $conditions[] = 'b.booking_type = ?';
+        $conditions[] = 'b.type = ?';
         $params[]     = $get['type'];
     }
     if (!empty($get['status'])) {
@@ -118,7 +104,6 @@ function build_list_filters(array $get): array {
     return [implode(' AND ', $conditions), $params];
 }
 
-// ── GET action=list ───────────────────────────────────────────────────────────
 function action_list(): void {
     [$where, $params] = build_list_filters($_GET);
 
@@ -128,8 +113,8 @@ function action_list(): void {
     $count_sql = "SELECT COUNT(*) FROM bookings b LEFT JOIN hotels h ON h.id = b.hotel_id WHERE $where";
     $total     = (int) db_query($count_sql, $params)->fetchColumn();
 
-    $pager  = paginate($total, $per_page, $page);
-    $sql    = booking_base_sql() . " WHERE $where ORDER BY b.service_date DESC, b.start_time DESC LIMIT ? OFFSET ?";
+    $pager    = paginate($total, $per_page, $page);
+    $sql      = booking_base_sql() . " WHERE $where ORDER BY b.service_date DESC, b.start_time DESC LIMIT ? OFFSET ?";
     $params[] = $per_page;
     $params[] = $pager['offset'];
 
@@ -138,7 +123,6 @@ function action_list(): void {
     json_success(['bookings' => $bookings, 'pagination' => $pager]);
 }
 
-// ── GET action=get&id=X ───────────────────────────────────────────────────────
 function action_get(): void {
     $id = (int)($_GET['id'] ?? 0);
     if (!$id) json_error('Identifiant manquant');
@@ -148,10 +132,10 @@ function action_get(): void {
 
     $booking['children']         = get_booking_children($id);
     $booking['whatsapp_history'] = db_fetch_all(
-        "SELECT * FROM whatsapp_logs WHERE booking_id = ? ORDER BY created_at DESC",
+        "SELECT * FROM whatsapp_history WHERE booking_id = ? ORDER BY sent_at DESC",
         [$id]
     );
-    $booking['payment_proof']    = db_fetch(
+    $booking['payment_proof'] = db_fetch(
         "SELECT * FROM payment_proofs WHERE booking_id = ? ORDER BY id DESC LIMIT 1",
         [$id]
     );
@@ -159,7 +143,6 @@ function action_get(): void {
     json_success(['booking' => $booking]);
 }
 
-// ── GET action=today ──────────────────────────────────────────────────────────
 function action_today(): void {
     $today    = date('Y-m-d');
     $bookings = db_fetch_all(
@@ -169,7 +152,6 @@ function action_today(): void {
     json_success(['bookings' => $bookings, 'date' => $today]);
 }
 
-// ── GET action=calendar&week_start=YYYY-MM-DD ─────────────────────────────────
 function action_calendar(): void {
     $week_start = $_GET['week_start'] ?? date('Y-m-d', strtotime('monday this week'));
     $ts         = strtotime($week_start);
@@ -182,7 +164,6 @@ function action_calendar(): void {
         [$week_start, $week_end]
     );
 
-    // Group by date
     $calendar = [];
     foreach ($bookings as $b) {
         $calendar[$b['service_date']][] = $b;
@@ -191,11 +172,9 @@ function action_calendar(): void {
     json_success(['calendar' => $calendar, 'week_start' => $week_start, 'week_end' => $week_end]);
 }
 
-// ── POST action=create ────────────────────────────────────────────────────────
 function action_create(): void {
     global $input;
 
-    // Required field validation
     $required = ['client_name', 'client_whatsapp', 'service_date', 'start_time', 'duration_minutes', 'children_count'];
     foreach ($required as $field) {
         if (empty($input[$field]) && $input[$field] !== '0' && $input[$field] !== 0) {
@@ -209,17 +188,15 @@ function action_create(): void {
     $children_count = (int)$input['children_count'];
     if ($children_count <= 0) json_error('Le nombre d\'enfants doit être supérieur à zéro');
 
-    // Calculate end_time
     $start_ts = strtotime($input['service_date'] . ' ' . $input['start_time']);
     if (!$start_ts) json_error('Date ou heure de début invalide');
     $end_time = date('H:i:s', $start_ts + $duration * 60);
 
     $hotel_id = !empty($input['hotel_id']) ? (int)$input['hotel_id'] : null;
 
-    // Estimate price if hotel is known
-    $estimated_price = null;
+    $suggested_price = null;
     if ($hotel_id) {
-        $estimated_price = calculate_booking_price(
+        $suggested_price = calculate_booking_price(
             $hotel_id,
             $input['service_date'],
             $input['start_time'],
@@ -233,41 +210,39 @@ function action_create(): void {
     db_begin();
     try {
         $booking_id = db_insert('bookings', [
-            'reference'          => $reference,
-            'hotel_id'           => $hotel_id,
-            'client_name'        => trim($input['client_name']),
-            'client_whatsapp'    => trim($input['client_whatsapp']),
-            'client_email'       => trim($input['client_email'] ?? ''),
-            'client_room'        => trim($input['client_room'] ?? ''),
-            'service_date'       => $input['service_date'],
-            'start_time'         => $input['start_time'],
-            'end_time'           => $end_time,
-            'duration_minutes'   => $duration,
-            'children_count'     => $children_count,
-            'booking_type'       => $input['booking_type'] ?? 'standard',
-            'status'             => 'new',
-            'price_status'       => 'estimated',
-            'estimated_price'    => $estimated_price,
-            'final_price'        => null,
-            'payment_status'     => 'pending',
-            'babysitter_id'      => !empty($input['babysitter_id']) ? (int)$input['babysitter_id'] : null,
-            'source'             => $input['source'] ?? 'admin',
-            'notes'              => trim($input['notes'] ?? ''),
-            'internal_notes'     => trim($input['internal_notes'] ?? ''),
-            'secure_token'       => generate_secure_token(),
-            'created_at'         => date('Y-m-d H:i:s'),
-            'updated_at'         => date('Y-m-d H:i:s'),
+            'reference'        => $reference,
+            'hotel_id'         => $hotel_id,
+            'client_name'      => trim($input['client_name']),
+            'client_whatsapp'  => trim($input['client_whatsapp']),
+            'client_email'     => trim($input['client_email'] ?? ''),
+            'room_number'      => trim($input['room_number'] ?? ''),
+            'service_date'     => $input['service_date'],
+            'start_time'       => $input['start_time'],
+            'end_time'         => $end_time,
+            'duration_minutes' => $duration,
+            'children_count'   => $children_count,
+            'type'             => $input['type'] ?? 'hotel',
+            'status'           => 'new',
+            'price_status'     => 'pending',
+            'suggested_price'  => $suggested_price,
+            'final_price'      => null,
+            'payment_status'   => 'not_required',
+            'babysitter_id'    => !empty($input['babysitter_id']) ? (int)$input['babysitter_id'] : null,
+            'source'           => $input['source'] ?? 'admin',
+            'internal_notes'   => trim($input['internal_notes'] ?? ''),
+            'secure_token'     => generate_secure_token(),
+            'created_at'       => date('Y-m-d H:i:s'),
+            'updated_at'       => date('Y-m-d H:i:s'),
         ]);
 
-        // Insert children details if provided
         if (!empty($input['children']) && is_array($input['children'])) {
             foreach ($input['children'] as $child) {
-                if (empty($child['name'])) continue;
+                if (empty($child['child_name'])) continue;
                 db_insert('booking_children', [
-                    'booking_id'  => $booking_id,
-                    'name'        => trim($child['name']),
-                    'age'         => isset($child['age']) ? (int)$child['age'] : null,
-                    'notes'       => trim($child['notes'] ?? ''),
+                    'booking_id' => $booking_id,
+                    'child_name' => trim($child['child_name']),
+                    'age'        => isset($child['age']) ? (int)$child['age'] : null,
+                    'notes'      => trim($child['notes'] ?? ''),
                 ]);
             }
         }
@@ -287,7 +262,6 @@ function action_create(): void {
     json_success(['booking' => $booking, 'message' => 'Réservation créée avec succès']);
 }
 
-// ── POST action=update&id=X ───────────────────────────────────────────────────
 function action_update(): void {
     global $input;
 
@@ -298,10 +272,10 @@ function action_update(): void {
     if (!$booking) json_error('Réservation introuvable', 404);
 
     $allowed = [
-        'client_name', 'client_whatsapp', 'client_email', 'client_room',
+        'client_name', 'client_whatsapp', 'client_email', 'room_number',
         'hotel_id', 'service_date', 'start_time', 'duration_minutes',
-        'children_count', 'booking_type', 'status', 'babysitter_id',
-        'notes', 'internal_notes', 'source', 'estimated_price', 'final_price',
+        'children_count', 'type', 'status', 'babysitter_id',
+        'internal_notes', 'source', 'suggested_price', 'final_price',
         'price_status', 'payment_status',
     ];
 
@@ -312,7 +286,6 @@ function action_update(): void {
         }
     }
 
-    // Recalculate end_time if timing changed
     $service_date     = $data['service_date']     ?? $booking['service_date'];
     $start_time       = $data['start_time']       ?? $booking['start_time'];
     $duration_minutes = $data['duration_minutes'] ?? $booking['duration_minutes'];
@@ -323,14 +296,13 @@ function action_update(): void {
 
     db_update('bookings', $data, ['id' => $id]);
 
-    // Update children if provided
     if (isset($input['children']) && is_array($input['children'])) {
         db_query("DELETE FROM booking_children WHERE booking_id = ?", [$id]);
         foreach ($input['children'] as $child) {
-            if (empty($child['name'])) continue;
+            if (empty($child['child_name'])) continue;
             db_insert('booking_children', [
                 'booking_id' => $id,
-                'name'       => trim($child['name']),
+                'child_name' => trim($child['child_name']),
                 'age'        => isset($child['age']) ? (int)$child['age'] : null,
                 'notes'      => trim($child['notes'] ?? ''),
             ]);
@@ -345,7 +317,6 @@ function action_update(): void {
     json_success(['booking' => $updated, 'message' => 'Réservation mise à jour']);
 }
 
-// ── POST action=status&id=X ───────────────────────────────────────────────────
 function action_status(): void {
     global $input;
 
@@ -353,7 +324,7 @@ function action_status(): void {
     $status = trim($input['status'] ?? '');
     $valid  = ['new', 'pending', 'confirmed', 'in_progress', 'completed', 'cancelled', 'no_show'];
 
-    if (!$id)                    json_error('Identifiant manquant');
+    if (!$id)                       json_error('Identifiant manquant');
     if (!in_array($status, $valid)) json_error('Statut invalide');
 
     $booking = db_fetch("SELECT id, reference, status FROM bookings WHERE id = ? LIMIT 1", [$id]);
@@ -366,7 +337,6 @@ function action_status(): void {
     json_success(['status' => $status, 'message' => 'Statut mis à jour']);
 }
 
-// ── POST action=confirm&id=X ──────────────────────────────────────────────────
 function action_confirm(): void {
     global $input;
 
@@ -391,7 +361,6 @@ function action_confirm(): void {
     json_success(['message' => 'Réservation confirmée']);
 }
 
-// ── POST action=cancel&id=X ───────────────────────────────────────────────────
 function action_cancel(): void {
     global $input;
 
@@ -403,29 +372,22 @@ function action_cancel(): void {
     $booking = db_fetch("SELECT * FROM bookings WHERE id = ? LIMIT 1", [$id]);
     if (!$booking) json_error('Réservation introuvable', 404);
 
-    if ($booking['status'] === 'completed') {
-        json_error('Impossible d\'annuler une réservation terminée');
-    }
-    if ($booking['status'] === 'cancelled') {
-        json_error('Cette réservation est déjà annulée');
-    }
+    if ($booking['status'] === 'completed') json_error('Impossible d\'annuler une réservation terminée');
+    if ($booking['status'] === 'cancelled')  json_error('Cette réservation est déjà annulée');
 
-    // Cancellation policy check — warn if within 24h
-    $service_ts = strtotime($booking['service_date'] . ' ' . $booking['start_time']);
+    $service_ts  = strtotime($booking['service_date'] . ' ' . $booking['start_time']);
     $hours_until = ($service_ts - time()) / 3600;
     $late_cancel = $hours_until < 24 && $hours_until > 0;
 
     $notes = $booking['internal_notes'];
-    if ($reason) {
-        $notes .= ($notes ? "\n" : '') . 'Annulation : ' . $reason;
-    }
+    if ($reason) $notes .= ($notes ? "\n" : '') . 'Annulation : ' . $reason;
 
     db_update('bookings', [
-        'status'          => 'cancelled',
-        'cancelled_at'    => date('Y-m-d H:i:s'),
-        'cancel_reason'   => $reason,
-        'internal_notes'  => $notes,
-        'updated_at'      => date('Y-m-d H:i:s'),
+        'status'              => 'cancelled',
+        'cancelled_at'        => date('Y-m-d H:i:s'),
+        'cancellation_reason' => $reason,
+        'internal_notes'      => $notes,
+        'updated_at'          => date('Y-m-d H:i:s'),
     ], ['id' => $id]);
 
     log_activity('booking_cancelled', "Réservation #{$booking['reference']} annulée. Raison: $reason", $id);
@@ -437,7 +399,6 @@ function action_cancel(): void {
     ]);
 }
 
-// ── POST action=complete&id=X ─────────────────────────────────────────────────
 function action_complete(): void {
     global $input;
 
@@ -447,9 +408,7 @@ function action_complete(): void {
     $booking = db_fetch("SELECT * FROM bookings WHERE id = ? LIMIT 1", [$id]);
     if (!$booking) json_error('Réservation introuvable', 404);
 
-    if ($booking['status'] === 'cancelled') {
-        json_error('Impossible de terminer une réservation annulée');
-    }
+    if ($booking['status'] === 'cancelled') json_error('Impossible de terminer une réservation annulée');
 
     db_update('bookings', [
         'status'       => 'completed',
@@ -462,7 +421,6 @@ function action_complete(): void {
     json_success(['message' => 'Réservation marquée comme terminée']);
 }
 
-// ── POST action=assign_babysitter&id=X ───────────────────────────────────────
 function action_assign_babysitter(): void {
     global $input;
 
@@ -495,21 +453,20 @@ function action_assign_babysitter(): void {
     json_success(['message' => 'Babysitter assignée', 'babysitter_name' => $sitter_name]);
 }
 
-// ── POST action=set_price&id=X ────────────────────────────────────────────────
 function action_set_price(): void {
     global $input;
 
     $id    = (int)($_GET['id'] ?? $input['id'] ?? 0);
     $price = $input['final_price'] ?? null;
 
-    if (!$id)          json_error('Identifiant manquant');
-    if ($price === null || $price === '') json_error('Prix manquant');
-    if ((float)$price < 0) json_error('Le prix ne peut pas être négatif');
+    if (!$id)                              json_error('Identifiant manquant');
+    if ($price === null || $price === '')   json_error('Prix manquant');
+    if ((float)$price < 0)                 json_error('Le prix ne peut pas être négatif');
 
     $booking = db_fetch("SELECT id, reference FROM bookings WHERE id = ? LIMIT 1", [$id]);
     if (!$booking) json_error('Réservation introuvable', 404);
 
-    $price_status = $input['price_status'] ?? 'fixed';
+    $price_status = $input['price_status'] ?? 'confirmed';
 
     db_update('bookings', [
         'final_price'  => (float)$price,
@@ -522,7 +479,6 @@ function action_set_price(): void {
     json_success(['message' => 'Prix enregistré', 'final_price' => (float)$price]);
 }
 
-// ── POST action=request_payment&id=X ─────────────────────────────────────────
 function action_request_payment(): void {
     global $input;
 
@@ -534,7 +490,6 @@ function action_request_payment(): void {
 
     $data = ['payment_status' => 'requested', 'updated_at' => date('Y-m-d H:i:s')];
 
-    // Generate secure token if not already set
     if (empty($booking['secure_token'])) {
         $data['secure_token'] = generate_secure_token();
     }
@@ -549,7 +504,6 @@ function action_request_payment(): void {
     json_success(['message' => 'Paiement demandé', 'payment_link' => $payment_link]);
 }
 
-// ── POST action=validate_payment&id=X ────────────────────────────────────────
 function action_validate_payment(): void {
     global $input;
 
@@ -560,14 +514,12 @@ function action_validate_payment(): void {
     if (!$booking) json_error('Réservation introuvable', 404);
 
     db_update('bookings', [
-        'payment_status'    => 'validated',
-        'payment_validated_at' => date('Y-m-d H:i:s'),
-        'updated_at'        => date('Y-m-d H:i:s'),
+        'payment_status' => 'validated',
+        'updated_at'     => date('Y-m-d H:i:s'),
     ], ['id' => $id]);
 
-    // Mark the latest proof as validated
     db_query(
-        "UPDATE payment_proofs SET status = 'validated', reviewed_at = ? WHERE booking_id = ? ORDER BY id DESC LIMIT 1",
+        "UPDATE payment_proofs SET status = 'approved', verified_at = ? WHERE booking_id = ? ORDER BY id DESC LIMIT 1",
         [date('Y-m-d H:i:s'), $id]
     );
 
@@ -576,7 +528,6 @@ function action_validate_payment(): void {
     json_success(['message' => 'Paiement validé']);
 }
 
-// ── POST action=refuse_payment&id=X ──────────────────────────────────────────
 function action_refuse_payment(): void {
     global $input;
 
@@ -594,7 +545,7 @@ function action_refuse_payment(): void {
     ], ['id' => $id]);
 
     db_query(
-        "UPDATE payment_proofs SET status = 'refused', refuse_reason = ?, reviewed_at = ? WHERE booking_id = ? ORDER BY id DESC LIMIT 1",
+        "UPDATE payment_proofs SET status = 'rejected', notes = ?, verified_at = ? WHERE booking_id = ? ORDER BY id DESC LIMIT 1",
         [$reason, date('Y-m-d H:i:s'), $id]
     );
 
@@ -603,50 +554,48 @@ function action_refuse_payment(): void {
     json_success(['message' => 'Paiement refusé']);
 }
 
-// ── GET action=stats ──────────────────────────────────────────────────────────
 function action_stats(): void {
-    $today      = date('Y-m-d');
+    $today       = date('Y-m-d');
     $month_start = date('Y-m-01');
     $month_end   = date('Y-m-t');
 
-    $total_bookings   = db_count('bookings');
-    $today_bookings   = (int) db_query("SELECT COUNT(*) FROM bookings WHERE service_date = ?", [$today])->fetchColumn();
-    $month_bookings   = (int) db_query("SELECT COUNT(*) FROM bookings WHERE service_date BETWEEN ? AND ?", [$month_start, $month_end])->fetchColumn();
-    $pending_count    = (int) db_query("SELECT COUNT(*) FROM bookings WHERE status IN ('new','pending')")->fetchColumn();
-    $confirmed_count  = (int) db_query("SELECT COUNT(*) FROM bookings WHERE status = 'confirmed'")->fetchColumn();
-    $completed_count  = (int) db_query("SELECT COUNT(*) FROM bookings WHERE status = 'completed'")->fetchColumn();
-    $cancelled_count  = (int) db_query("SELECT COUNT(*) FROM bookings WHERE status = 'cancelled'")->fetchColumn();
+    $total_bookings  = db_count('bookings');
+    $today_bookings  = (int) db_query("SELECT COUNT(*) FROM bookings WHERE service_date = ?", [$today])->fetchColumn();
+    $month_bookings  = (int) db_query("SELECT COUNT(*) FROM bookings WHERE service_date BETWEEN ? AND ?", [$month_start, $month_end])->fetchColumn();
+    $pending_count   = (int) db_query("SELECT COUNT(*) FROM bookings WHERE status IN ('new','pending')")->fetchColumn();
+    $confirmed_count = (int) db_query("SELECT COUNT(*) FROM bookings WHERE status = 'confirmed'")->fetchColumn();
+    $completed_count = (int) db_query("SELECT COUNT(*) FROM bookings WHERE status = 'completed'")->fetchColumn();
+    $cancelled_count = (int) db_query("SELECT COUNT(*) FROM bookings WHERE status = 'cancelled'")->fetchColumn();
 
-    $month_revenue    = (float) db_query(
+    $month_revenue = (float) db_query(
         "SELECT COALESCE(SUM(final_price),0) FROM bookings WHERE service_date BETWEEN ? AND ? AND payment_status = 'validated'",
         [$month_start, $month_end]
     )->fetchColumn();
 
-    $total_revenue    = (float) db_query(
+    $total_revenue = (float) db_query(
         "SELECT COALESCE(SUM(final_price),0) FROM bookings WHERE payment_status = 'validated'"
     )->fetchColumn();
 
-    $pending_payment  = (int) db_query(
-        "SELECT COUNT(*) FROM bookings WHERE payment_status IN ('requested','proof_received')"
+    $pending_payment = (int) db_query(
+        "SELECT COUNT(*) FROM bookings WHERE payment_status IN ('requested','proof_sent')"
     )->fetchColumn();
 
     json_success([
         'stats' => [
-            'total_bookings'   => $total_bookings,
-            'today_bookings'   => $today_bookings,
-            'month_bookings'   => $month_bookings,
-            'pending'          => $pending_count,
-            'confirmed'        => $confirmed_count,
-            'completed'        => $completed_count,
-            'cancelled'        => $cancelled_count,
-            'month_revenue'    => $month_revenue,
-            'total_revenue'    => $total_revenue,
-            'pending_payment'  => $pending_payment,
+            'total_bookings'  => $total_bookings,
+            'today_bookings'  => $today_bookings,
+            'month_bookings'  => $month_bookings,
+            'pending'         => $pending_count,
+            'confirmed'       => $confirmed_count,
+            'completed'       => $completed_count,
+            'cancelled'       => $cancelled_count,
+            'month_revenue'   => $month_revenue,
+            'total_revenue'   => $total_revenue,
+            'pending_payment' => $pending_payment,
         ],
     ]);
 }
 
-// ── GET action=export ─────────────────────────────────────────────────────────
 function action_export(): void {
     [$where, $params] = build_list_filters($_GET);
 
@@ -655,18 +604,16 @@ function action_export(): void {
         $params
     );
 
-    // Switch to CSV output
     header('Content-Type: text/csv; charset=UTF-8');
     header('Content-Disposition: attachment; filename="reservations_' . date('Y-m-d') . '.csv"');
 
     $out = fopen('php://output', 'w');
-    // BOM for Excel UTF-8
     fputs($out, "\xEF\xBB\xBF");
 
     fputcsv($out, [
         'Référence', 'Date', 'Heure début', 'Heure fin', 'Durée (min)',
         'Client', 'WhatsApp', 'Hôtel', 'Ville', 'Chambre',
-        'Enfants', 'Babysitter', 'Statut', 'Prix estimé', 'Prix final',
+        'Enfants', 'Babysitter', 'Statut', 'Prix suggéré', 'Prix final',
         'Statut paiement', 'Source', 'Notes', 'Créé le',
     ], ';');
 
@@ -681,15 +628,15 @@ function action_export(): void {
             $b['client_whatsapp'],
             $b['hotel_name'] ?? '',
             $b['hotel_city'] ?? '',
-            $b['client_room'] ?? '',
+            $b['room_number'] ?? '',
             $b['children_count'],
             $b['babysitter_name'] ?? '',
             get_status_label($b['status']),
-            $b['estimated_price'] ?? '',
+            $b['suggested_price'] ?? '',
             $b['final_price'] ?? '',
             $b['payment_status'],
             $b['source'] ?? '',
-            $b['notes'] ?? '',
+            $b['internal_notes'] ?? '',
             $b['created_at'],
         ], ';');
     }
