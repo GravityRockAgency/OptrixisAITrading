@@ -116,10 +116,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $primary_color = $hotel['primary_color'] ?? '#2D6A4F';
 $accent_color  = $hotel['accent_color']  ?? '#E8C342';
+$color_end     = $hotel['secondary_color'] ?? '#52B788';
 
 $i18n = [
     'fr' => [
-        'title'          => $hotel['public_title'] ?? 'Réservez une babysitter de confiance',
+        'title'          => $hotel['public_title'] ?? 'Réservez une baby-sitter de confiance',
         'subtitle'       => $hotel['public_text']  ?? 'Profitez de votre séjour pendant que Faiza Multiservice prend soin de vos enfants.',
         'form_title'     => 'Demande de babysitting',
         'name'           => 'Nom complet',
@@ -136,15 +137,21 @@ $i18n = [
         'child_needs'    => 'Besoins particuliers',
         'notes'          => 'Notes complémentaires',
         'notice'         => 'Votre demande sera étudiée rapidement par notre équipe. Le tarif final vous sera communiqué via WhatsApp après vérification de la disponibilité, de l\'âge des enfants et des besoins spécifiques.',
+        'notice_title'   => 'Note importante',
         'rules_title'    => 'Règles du service',
         'rule1'          => 'Demande au moins 24 heures avant l\'heure souhaitée.',
         'rule2'          => 'Annulation au moins 3 heures avant le service.',
         'rule3'          => 'Annulation tardive : remboursement limité à 50%.',
         'submit'         => 'Envoyer la demande',
-        'trust1'         => 'Intervenantes sélectionnées',
+        'trust1'         => 'Baby-sitters sélectionnées',
         'trust2'         => 'Coordination avec l\'hôtel',
         'trust3'         => 'Support WhatsApp',
         'trust4'         => 'Service multilingue',
+        'sec_a'          => 'Vos informations',
+        'sec_b'          => 'Date & heure du service',
+        'sec_c'          => 'Détails des enfants',
+        'sec_d'          => 'Notes complémentaires',
+        'child_label'    => 'Enfant',
     ],
     'en' => [
         'title'          => 'Book a trusted babysitter',
@@ -164,6 +171,7 @@ $i18n = [
         'child_needs'    => 'Special needs',
         'notes'          => 'Additional notes',
         'notice'         => 'Your request will be reviewed quickly by our team. The final price will be communicated via WhatsApp after verifying availability, children\'s ages, and specific needs.',
+        'notice_title'   => 'Important note',
         'rules_title'    => 'Service rules',
         'rule1'          => 'Request at least 24 hours before the desired time.',
         'rule2'          => 'Cancellation at least 3 hours before the service.',
@@ -173,6 +181,11 @@ $i18n = [
         'trust2'         => 'Hotel coordination',
         'trust3'         => 'WhatsApp support',
         'trust4'         => 'Multilingual service',
+        'sec_a'          => 'Your information',
+        'sec_b'          => 'Service date & time',
+        'sec_c'          => 'Children details',
+        'sec_d'          => 'Additional notes',
+        'child_label'    => 'Child',
     ],
     'ar' => [
         'title'          => 'احجزي جليسة أطفال موثوقة',
@@ -192,6 +205,7 @@ $i18n = [
         'child_needs'    => 'احتياجات خاصة',
         'notes'          => 'ملاحظات إضافية',
         'notice'         => 'سيتم مراجعة طلبكم بسرعة من قِبل فريقنا. سيتم إبلاغكم بالسعر النهائي عبر واتساب بعد التحقق من التوفر وأعمار الأطفال والاحتياجات الخاصة.',
+        'notice_title'   => 'ملاحظة مهمة',
         'rules_title'    => 'قواعد الخدمة',
         'rule1'          => 'الطلب قبل 24 ساعة على الأقل من الوقت المطلوب.',
         'rule2'          => 'الإلغاء قبل 3 ساعات على الأقل من الخدمة.',
@@ -201,6 +215,11 @@ $i18n = [
         'trust2'         => 'تنسيق مع الفندق',
         'trust3'         => 'دعم واتساب',
         'trust4'         => 'خدمة متعددة اللغات',
+        'sec_a'          => 'معلوماتكم',
+        'sec_b'          => 'تاريخ ووقت الخدمة',
+        'sec_c'          => 'تفاصيل الأطفال',
+        'sec_d'          => 'ملاحظات إضافية',
+        'child_label'    => 'الطفل',
     ],
 ];
 
@@ -208,6 +227,7 @@ $t   = $i18n[$lang] ?? $i18n['fr'];
 $dir = $lang === 'ar' ? 'rtl' : 'ltr';
 $base_url = defined('BASE_URL') ? BASE_URL : '';
 $min_date = date('Y-m-d', time() + 86400);
+$co_logo  = get_setting('company_logo', '');
 ?>
 <!DOCTYPE html>
 <html lang="<?= $lang ?>" dir="<?= $dir ?>">
@@ -218,164 +238,204 @@ $min_date = date('Y-m-d', time() + 86400);
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?= $base_url ?>/assets/css/public.css">
-<meta name="hotel-color" content="<?= htmlspecialchars($primary_color) ?>">
-<style>
-:root { --hotel-color: <?= htmlspecialchars($primary_color) ?>; --hotel-accent: <?= htmlspecialchars($accent_color) ?>; }
-</style>
+<style>:root{--hotel-color:<?= htmlspecialchars($primary_color) ?>;--hotel-color-end:<?= htmlspecialchars($color_end) ?>;}</style>
 </head>
-<body class="fk-public-page">
+<body class="pk-page">
 
-<!-- Header -->
-<header class="fk-public-header">
-  <div class="fk-public-header-inner">
-    <div style="display:flex;align-items:center;gap:12px">
-      <div style="width:36px;height:36px;border-radius:50%;background:#0D2B1D;color:#52B788;font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0">F</div>
-      <div>
-        <div style="font-size:13px;font-weight:700;color:#1A2E24">Faiza Kids Concierge</div>
-        <div style="font-size:11px;color:#6B7A72"><?= sanitize($hotel['name']) ?></div>
+<header class="pk-header">
+  <div class="pk-header-inner">
+
+    <div class="pk-brand">
+      <?php if ($co_logo): ?>
+        <img src="<?= htmlspecialchars($co_logo) ?>" alt="Faiza Kids" class="pk-brand-logo-img">
+      <?php else: ?>
+        <div class="pk-brand-badge">FK</div>
+      <?php endif; ?>
+      <div class="pk-brand-info">
+        <div class="pk-brand-name">Faiza Kids Concierge</div>
+        <div class="pk-brand-sub"><?= $lang==='ar'?'خدمة احترافية':($lang==='en'?'Professional service':'Service professionnel') ?></div>
       </div>
     </div>
-    <div class="fk-lang-switcher">
-      <?php foreach (['fr'=>'FR','en'=>'EN','ar'=>'عربي'] as $lc=>$ll): ?>
-      <a href="?lang=<?= $lc ?>" class="<?= $lang===$lc?'active':'' ?>"><?= $ll ?></a>
-      <?php endforeach; ?>
+
+    <div class="pk-header-hotel">
+      <?php if (!empty($hotel['logo_url'])): ?>
+        <img src="<?= htmlspecialchars($hotel['logo_url']) ?>" alt="<?= sanitize($hotel['name']) ?>" class="pk-header-hotel-logo">
+      <?php else: ?>
+        <div class="pk-header-hotel-badge"><?= mb_strtoupper(mb_substr($hotel['name'], 0, 2)) ?></div>
+      <?php endif; ?>
+      <span class="pk-header-hotel-name"><?= sanitize($hotel['name']) ?></span>
     </div>
+
+    <nav class="pk-langs">
+      <?php foreach (['fr'=>'FR','en'=>'EN','ar'=>'عربي'] as $lc=>$ll): ?>
+      <a href="?lang=<?= $lc ?>" class="pk-lang<?= $lang===$lc?' is-active':'' ?>"><?= $ll ?></a>
+      <?php endforeach; ?>
+    </nav>
+
   </div>
 </header>
 
-<!-- Hero -->
-<div class="fk-public-hero" style="background:linear-gradient(135deg, <?= htmlspecialchars($primary_color) ?> 0%, <?= htmlspecialchars($hotel['secondary_color']??'#52B788') ?> 100%)">
-  <h1><?= sanitize($t['title']) ?></h1>
-  <p><?= sanitize($t['subtitle']) ?></p>
-  <div class="fk-trust-blocks">
-    <?php foreach (['✓'=>$t['trust1'],'🏨'=>$t['trust2'],'💬'=>$t['trust3'],'🌐'=>$t['trust4']] as $ico=>$txt): ?>
-    <div class="fk-trust-item">
-      <div class="fk-trust-icon"><?= $ico ?></div>
-      <div><?= sanitize($txt) ?></div>
-    </div>
-    <?php endforeach; ?>
+<section class="pk-hero">
+  <div class="pk-hero-inner">
+    <div class="pk-hero-chip">⭐ <?= $lang==='ar'?'خدمة موثوقة':($lang==='en'?'Trusted service':'Service de confiance') ?></div>
+    <h1 class="pk-hero-h1"><?= sanitize($t['title']) ?></h1>
+    <p class="pk-hero-p"><?= sanitize($t['subtitle']) ?></p>
   </div>
+</section>
+
+<div class="pk-trusts">
+  <div class="pk-trust"><div class="pk-trust-icon">✓</div><div class="pk-trust-label"><?= sanitize($t['trust1']) ?></div></div>
+  <div class="pk-trust"><div class="pk-trust-icon">🏨</div><div class="pk-trust-label"><?= sanitize($t['trust2']) ?></div></div>
+  <div class="pk-trust"><div class="pk-trust-icon">💬</div><div class="pk-trust-label"><?= sanitize($t['trust3']) ?></div></div>
+  <div class="pk-trust"><div class="pk-trust-icon">🌐</div><div class="pk-trust-label"><?= sanitize($t['trust4']) ?></div></div>
 </div>
 
-<!-- Form card -->
-<div class="fk-form-wrap">
-  <?php if (!empty($errors)): ?>
-  <div class="fk-alert-box fk-alert-error">
-    <ul style="margin:0;padding-left:18px">
-      <?php foreach ($errors as $e): ?><li><?= sanitize($e) ?></li><?php endforeach; ?>
-    </ul>
-  </div>
-  <?php endif; ?>
+<main class="pk-main">
+  <div class="pk-card">
 
-  <form method="POST" id="bookingForm">
-    <input type="hidden" name="client_language" value="<?= $lang ?>">
-
-    <!-- Parent info -->
-    <div class="fk-form-section">
-      <div class="fk-form-section-title"><?= $t['form_title'] ?></div>
-      <div class="fk-form-grid-2">
-        <div class="fk-field"><label><?= $t['name'] ?> *</label>
-          <input type="text" name="client_name" class="fk-public-input" value="<?= sanitize($_POST['client_name']??'') ?>" required></div>
-        <div class="fk-field"><label><?= $t['whatsapp'] ?> *</label>
-          <input type="tel" name="client_whatsapp" class="fk-public-input" value="<?= sanitize($_POST['client_whatsapp']??'') ?>" placeholder="+212 6XX XXX XXX" required></div>
-        <div class="fk-field"><label><?= $t['email'] ?></label>
-          <input type="email" name="client_email" class="fk-public-input" value="<?= sanitize($_POST['client_email']??'') ?>"></div>
-        <div class="fk-field"><label><?= $t['room'] ?></label>
-          <input type="text" name="room_number" class="fk-public-input" value="<?= sanitize($_POST['room_number']??'') ?>" placeholder="Ex: 312"></div>
-      </div>
-    </div>
-
-    <!-- Service -->
-    <div class="fk-form-section">
-      <div class="fk-form-section-title">🗓 Service</div>
-      <div class="fk-form-grid-2">
-        <div class="fk-field"><label><?= $t['date'] ?> *</label>
-          <input type="date" name="service_date" class="fk-public-input" value="<?= sanitize($_POST['service_date']??'') ?>" min="<?= $min_date ?>" required></div>
-        <div class="fk-field"><label><?= $t['time'] ?> *</label>
-          <input type="time" name="start_time" class="fk-public-input" value="<?= sanitize($_POST['start_time']??'10:00') ?>" required></div>
-        <div class="fk-field"><label><?= $t['duration'] ?></label>
-          <select name="duration_minutes" class="fk-public-input">
-            <?php foreach ([60=>'1h',90=>'1h30',120=>'2h',150=>'2h30',180=>'3h',240=>'4h',300=>'5h',360=>'6h',480=>'8h',720=>'12h'] as $m=>$l): ?>
-            <option value="<?= $m ?>" <?= ($_POST['duration_minutes']??120)==$m?'selected':'' ?>><?= $l ?></option>
-            <?php endforeach; ?>
-          </select></div>
-        <div class="fk-field"><label><?= $t['children'] ?> *</label>
-          <select name="children_count" id="childCount" class="fk-public-input" onchange="generateChildForms(this.value)">
-            <?php for ($n=1;$n<=8;$n++): ?>
-            <option value="<?= $n ?>" <?= ($_POST['children_count']??1)==$n?'selected':'' ?>><?= $n ?></option>
-            <?php endfor; ?>
-          </select></div>
-      </div>
-    </div>
-
-    <!-- Children details -->
-    <div class="fk-form-section">
-      <div class="fk-form-section-title">👶 <?= $lang==='ar'?'تفاصيل الأطفال':($lang==='en'?'Children details':'Détails des enfants') ?></div>
-      <div id="childrenContainer"></div>
-    </div>
-
-    <!-- Notes -->
-    <div class="fk-form-section">
-      <div class="fk-field"><label><?= $t['notes'] ?></label>
-        <textarea name="special_needs" class="fk-public-input" rows="3" placeholder="<?= $lang==='ar'?'معلومات إضافية...':($lang==='en'?'Any additional information...':'Informations complémentaires, besoins spéciaux...') ?>"><?= sanitize($_POST['special_needs']??'') ?></textarea>
-      </div>
-    </div>
-
-    <!-- Price notice -->
-    <div class="fk-notice-box">
-      <div class="fk-notice-icon">ℹ️</div>
-      <p><?= sanitize($t['notice']) ?></p>
-    </div>
-
-    <!-- Rules -->
-    <div class="fk-rules-box">
-      <div class="fk-rules-title">📋 <?= sanitize($t['rules_title']) ?></div>
+    <?php if (!empty($errors)): ?>
+    <div class="pk-errors">
+      <div class="pk-errors-title"><?= $lang==='ar'?'يرجى تصحيح الأخطاء التالية':($lang==='en'?'Please fix the following errors':'Veuillez corriger les erreurs suivantes') ?></div>
       <ul>
-        <li><?= sanitize($t['rule1']) ?></li>
-        <li><?= sanitize($t['rule2']) ?></li>
-        <li><?= sanitize($t['rule3']) ?></li>
+        <?php foreach ($errors as $e): ?><li><?= sanitize($e) ?></li><?php endforeach; ?>
       </ul>
     </div>
+    <?php endif; ?>
 
-    <button type="submit" class="fk-submit-btn" style="background:<?= htmlspecialchars($primary_color) ?>">
-      <?= sanitize($t['submit']) ?>
-    </button>
-  </form>
-</div>
+    <form method="POST" id="bookingForm">
+      <input type="hidden" name="client_language" value="<?= $lang ?>">
 
-<footer class="fk-public-footer">
+      <!-- A: Client information -->
+      <div class="pk-section">
+        <div class="pk-section-head">
+          <span class="pk-section-num">A</span>
+          <span class="pk-section-title"><?= sanitize($t['sec_a']) ?></span>
+        </div>
+        <div class="pk-grid-2">
+          <div class="pk-field">
+            <label class="pk-label"><?= sanitize($t['name']) ?><span class="pk-req">*</span></label>
+            <input type="text" name="client_name" class="pk-input" value="<?= sanitize($_POST['client_name']??'') ?>" required>
+          </div>
+          <div class="pk-field">
+            <label class="pk-label"><?= sanitize($t['whatsapp']) ?><span class="pk-req">*</span></label>
+            <input type="tel" name="client_whatsapp" class="pk-input" value="<?= sanitize($_POST['client_whatsapp']??'') ?>" placeholder="+212 6XX XXX XXX" required>
+          </div>
+          <div class="pk-field">
+            <label class="pk-label"><?= sanitize($t['email']) ?></label>
+            <input type="email" name="client_email" class="pk-input" value="<?= sanitize($_POST['client_email']??'') ?>">
+          </div>
+          <div class="pk-field">
+            <label class="pk-label"><?= sanitize($t['room']) ?></label>
+            <input type="text" name="room_number" class="pk-input" value="<?= sanitize($_POST['room_number']??'') ?>" placeholder="<?= $lang==='ar'?'مثال: 312':'Ex: 312' ?>">
+          </div>
+        </div>
+      </div>
+
+      <!-- B: Service date & time -->
+      <div class="pk-section">
+        <div class="pk-section-head">
+          <span class="pk-section-num">B</span>
+          <span class="pk-section-title">🗓 <?= sanitize($t['sec_b']) ?></span>
+        </div>
+        <div class="pk-grid-2">
+          <div class="pk-field">
+            <label class="pk-label"><?= sanitize($t['date']) ?><span class="pk-req">*</span></label>
+            <input type="date" name="service_date" class="pk-input" value="<?= sanitize($_POST['service_date']??'') ?>" min="<?= $min_date ?>" required>
+          </div>
+          <div class="pk-field">
+            <label class="pk-label"><?= sanitize($t['time']) ?><span class="pk-req">*</span></label>
+            <input type="time" name="start_time" class="pk-input" value="<?= sanitize($_POST['start_time']??'10:00') ?>" required>
+          </div>
+          <div class="pk-field">
+            <label class="pk-label"><?= sanitize($t['duration']) ?></label>
+            <select name="duration_minutes" class="pk-select">
+              <?php foreach ([60=>'1h',90=>'1h30',120=>'2h',150=>'2h30',180=>'3h',240=>'4h',300=>'5h',360=>'6h',480=>'8h',720=>'12h'] as $m=>$l): ?>
+              <option value="<?= $m ?>" <?= ($_POST['duration_minutes']??120)==$m?'selected':'' ?>><?= $l ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <div class="pk-field">
+            <label class="pk-label"><?= sanitize($t['children']) ?><span class="pk-req">*</span></label>
+            <select name="children_count" id="childCount" class="pk-select">
+              <?php for ($n=1;$n<=8;$n++): ?>
+              <option value="<?= $n ?>" <?= ($_POST['children_count']??1)==$n?'selected':'' ?>><?= $n ?></option>
+              <?php endfor; ?>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- C: Children details -->
+      <div class="pk-section">
+        <div class="pk-section-head">
+          <span class="pk-section-num">C</span>
+          <span class="pk-section-title">👶 <?= sanitize($t['sec_c']) ?></span>
+        </div>
+        <div id="childrenContainer"></div>
+      </div>
+
+      <!-- D: Additional notes -->
+      <div class="pk-section">
+        <div class="pk-section-head">
+          <span class="pk-section-num">D</span>
+          <span class="pk-section-title"><?= sanitize($t['sec_d']) ?></span>
+        </div>
+        <div class="pk-field">
+          <label class="pk-label"><?= sanitize($t['notes']) ?></label>
+          <textarea name="special_needs" class="pk-textarea" rows="3" placeholder="<?= $lang==='ar'?'معلومات إضافية...':($lang==='en'?'Any additional information...':'Informations complémentaires, besoins spéciaux...') ?>"><?= sanitize($_POST['special_needs']??'') ?></textarea>
+        </div>
+      </div>
+
+      <!-- Price notice -->
+      <div class="pk-notice">
+        <div class="pk-notice-ico">ℹ️</div>
+        <div>
+          <div class="pk-notice-title"><?= sanitize($t['notice_title']) ?></div>
+          <div class="pk-notice-text"><?= sanitize($t['notice']) ?></div>
+        </div>
+      </div>
+
+      <!-- Service rules -->
+      <div class="pk-rules">
+        <div class="pk-rules-title">📋 <?= sanitize($t['rules_title']) ?></div>
+        <ul>
+          <li><?= sanitize($t['rule1']) ?></li>
+          <li><?= sanitize($t['rule2']) ?></li>
+          <li><?= sanitize($t['rule3']) ?></li>
+        </ul>
+      </div>
+
+      <div class="pk-submit-section">
+        <button type="submit" class="pk-submit-btn"><?= sanitize($t['submit']) ?></button>
+      </div>
+    </form>
+
+  </div>
+</main>
+
+<footer class="pk-footer">
   <p>© <?= date('Y') ?> Faiza Multiservice · Agadir, Maroc</p>
 </footer>
 
 <script src="<?= $base_url ?>/assets/js/public.js"></script>
 <script>
-const LANG = '<?= $lang ?>';
-const T_CHILD_NAME = '<?= $t["child_name"] ?>';
-const T_CHILD_AGE  = '<?= $t["child_age"] ?>';
-const T_CHILD_ALG  = '<?= $t["child_allergies"] ?>';
-const T_CHILD_NDS  = '<?= $t["child_needs"] ?>';
-
-function generateChildForms(count) {
-  const c = document.getElementById('childrenContainer');
-  c.innerHTML = '';
-  for (let i = 0; i < parseInt(count); i++) {
-    c.innerHTML += `
-    <div class="fk-child-card">
-      <div class="fk-child-number">${LANG==='ar'?'الطفل':'Enfant'} ${i+1}</div>
-      <div class="fk-form-grid-4">
-        <div class="fk-field"><label>${T_CHILD_NAME}</label>
-          <input type="text" name="child_name[]" class="fk-public-input"></div>
-        <div class="fk-field"><label>${T_CHILD_AGE}</label>
-          <input type="number" name="child_age[]" class="fk-public-input" min="0" max="18" placeholder="${LANG==='ar'?'سنوات':'ans'}"></div>
-        <div class="fk-field"><label>${T_CHILD_ALG}</label>
-          <input type="text" name="child_allergies[]" class="fk-public-input" placeholder="${LANG==='ar'?'لا يوجد':'Aucune'}"></div>
-        <div class="fk-field"><label>${T_CHILD_NDS}</label>
-          <input type="text" name="child_needs[]" class="fk-public-input"></div>
-      </div>
-    </div>`;
-  }
-}
-document.addEventListener('DOMContentLoaded', () => generateChildForms(<?= (int)($_POST['children_count']??1) ?>));
+(function() {
+  var INITIAL_COUNT = <?= (int)($_POST['children_count'] ?? 1) ?>;
+  var LANG = '<?= $lang ?>';
+  document.addEventListener('DOMContentLoaded', function() {
+    if (typeof window.generateChildForms === 'function') {
+      window.generateChildForms(INITIAL_COUNT, LANG);
+    }
+    var sel = document.getElementById('childCount');
+    if (sel) {
+      sel.addEventListener('change', function() {
+        if (typeof window.generateChildForms === 'function') {
+          window.generateChildForms(parseInt(this.value), LANG);
+        }
+      });
+    }
+  });
+})();
 </script>
 </body>
 </html>

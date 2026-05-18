@@ -101,192 +101,346 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$t = [
+$i18n = [
     'fr' => [
-        'title'   => 'Service babysitting Agadir & région',
-        'intro'   => "Que vous soyez en séjour à Agadir ou résident dans la région, notre service est conçu pour répondre à vos besoins.\n\nEnvoyez votre demande en toute simplicité : notre équipe vous contactera rapidement via WhatsApp afin de confirmer la disponibilité et vous fournir tous les détails du service.",
-        'notice'  => 'Le tarif sera communiqué après vérification de la disponibilité et des détails du service.',
-        'rule1'   => 'Demande au moins 24 heures à l\'avance.',
-        'rule2'   => 'Annulation au moins 3 heures avant le service.',
-        'rule3'   => 'Annulation tardive : remboursement limité à 50%.',
-        'submit'  => 'Envoyer la demande',
+        'title'       => 'Service babysitting Agadir & région',
+        'subtitle'    => 'Que vous soyez en séjour à Agadir ou résident dans la région, notre équipe vous contacte rapidement via WhatsApp.',
+        'notice'      => 'Le tarif sera communiqué après vérification de la disponibilité et des détails du service.',
+        'notice_title'=> 'Note importante',
+        'rules_title' => 'Règles du service',
+        'rule1'       => 'Demande au moins 24 heures à l\'avance.',
+        'rule2'       => 'Annulation au moins 3 heures avant le service.',
+        'rule3'       => 'Annulation tardive : remboursement limité à 50%.',
+        'submit'      => 'Envoyer la demande',
+        'trust1'      => 'Service à domicile',
+        'trust2'      => 'Réponse via WhatsApp',
+        'trust3'      => 'Disponibilité vérifiée',
+        'trust4'      => 'Service multilingue',
+        'sec_a'       => 'Vos informations',
+        'sec_b'       => 'Localisation',
+        'sec_c'       => 'Date & heure du service',
+        'sec_d'       => 'Détails des enfants',
+        'sec_e'       => 'Notes complémentaires',
+        'name'        => 'Nom complet',
+        'whatsapp'    => 'Numéro WhatsApp',
+        'email'       => 'Email (optionnel)',
+        'city_lbl'    => 'Ville',
+        'area'        => 'Quartier / Secteur',
+        'address'     => 'Adresse complète',
+        'loc_notes'   => 'Indications pour trouver l\'adresse',
+        'date'        => 'Date',
+        'time'        => 'Heure de début',
+        'duration'    => 'Durée',
+        'children'    => 'Nombre d\'enfants',
+        'child_name'  => 'Prénom',
+        'child_age'   => 'Âge',
+        'child_allrg' => 'Allergies',
+        'child_needs' => 'Besoins particuliers',
+        'notes'       => 'Notes complémentaires',
+        'child_label' => 'Enfant',
     ],
     'en' => [
-        'title'   => 'Babysitting service – Agadir & region',
-        'intro'   => "Whether you are visiting Agadir or living in the area, our service is designed to meet your needs.\n\nSend your request easily: our team will contact you quickly via WhatsApp to confirm availability and provide all service details.",
-        'notice'  => 'The price will be communicated after verifying availability and service details.',
-        'rule1'   => 'Request at least 24 hours in advance.',
-        'rule2'   => 'Cancellation at least 3 hours before the service.',
-        'rule3'   => 'Late cancellation: refund limited to 50%.',
-        'submit'  => 'Send request',
+        'title'       => 'Babysitting service – Agadir & region',
+        'subtitle'    => 'Whether visiting or residing in Agadir, our team will contact you quickly via WhatsApp.',
+        'notice'      => 'The price will be communicated after verifying availability and service details.',
+        'notice_title'=> 'Important note',
+        'rules_title' => 'Service rules',
+        'rule1'       => 'Request at least 24 hours in advance.',
+        'rule2'       => 'Cancellation at least 3 hours before the service.',
+        'rule3'       => 'Late cancellation: refund limited to 50%.',
+        'submit'      => 'Send request',
+        'trust1'      => 'Home service',
+        'trust2'      => 'WhatsApp response',
+        'trust3'      => 'Verified availability',
+        'trust4'      => 'Multilingual service',
+        'sec_a'       => 'Your information',
+        'sec_b'       => 'Location',
+        'sec_c'       => 'Service date & time',
+        'sec_d'       => 'Children details',
+        'sec_e'       => 'Additional notes',
+        'name'        => 'Full name',
+        'whatsapp'    => 'WhatsApp number',
+        'email'       => 'Email (optional)',
+        'city_lbl'    => 'City',
+        'area'        => 'Area / District',
+        'address'     => 'Full address',
+        'loc_notes'   => 'Location notes',
+        'date'        => 'Date',
+        'time'        => 'Start time',
+        'duration'    => 'Duration',
+        'children'    => 'Number of children',
+        'child_name'  => 'First name',
+        'child_age'   => 'Age',
+        'child_allrg' => 'Allergies',
+        'child_needs' => 'Special needs',
+        'notes'       => 'Additional notes',
+        'child_label' => 'Child',
     ],
     'ar' => [
-        'title'   => 'خدمة جليسة الأطفال – أكادير والمنطقة',
-        'intro'   => "سواء كنتم في إقامة بأكادير أو مقيمين في المنطقة، خدمتنا مصممة لتلبية احتياجاتكم.\n\nأرسلوا طلبكم بكل سهولة: سيتواصل معكم فريقنا بسرعة عبر واتساب لتأكيد التوفر وتزويدكم بكافة تفاصيل الخدمة.",
-        'notice'  => 'سيتم إبلاغكم بالسعر بعد التحقق من التوفر وتفاصيل الخدمة.',
-        'rule1'   => 'الطلب قبل 24 ساعة على الأقل.',
-        'rule2'   => 'الإلغاء قبل 3 ساعات على الأقل من الخدمة.',
-        'rule3'   => 'الإلغاء المتأخر: استرداد محدود بـ 50%.',
-        'submit'  => 'إرسال الطلب',
+        'title'       => 'خدمة جليسة الأطفال – أكادير والمنطقة',
+        'subtitle'    => 'سواء كنتم في إقامة أو مقيمين في المنطقة، سيتواصل معكم فريقنا بسرعة عبر واتساب.',
+        'notice'      => 'سيتم إبلاغكم بالسعر بعد التحقق من التوفر وتفاصيل الخدمة.',
+        'notice_title'=> 'ملاحظة مهمة',
+        'rules_title' => 'قواعد الخدمة',
+        'rule1'       => 'الطلب قبل 24 ساعة على الأقل.',
+        'rule2'       => 'الإلغاء قبل 3 ساعات على الأقل من الخدمة.',
+        'rule3'       => 'الإلغاء المتأخر: استرداد محدود بـ 50%.',
+        'submit'      => 'إرسال الطلب',
+        'trust1'      => 'خدمة منزلية',
+        'trust2'      => 'رد عبر واتساب',
+        'trust3'      => 'توفر مضمون',
+        'trust4'      => 'خدمة متعددة اللغات',
+        'sec_a'       => 'معلوماتكم',
+        'sec_b'       => 'الموقع',
+        'sec_c'       => 'تاريخ ووقت الخدمة',
+        'sec_d'       => 'تفاصيل الأطفال',
+        'sec_e'       => 'ملاحظات إضافية',
+        'name'        => 'الاسم الكامل',
+        'whatsapp'    => 'رقم واتساب',
+        'email'       => 'البريد الإلكتروني (اختياري)',
+        'city_lbl'    => 'المدينة',
+        'area'        => 'الحي / المنطقة',
+        'address'     => 'العنوان الكامل',
+        'loc_notes'   => 'ملاحظات للعثور على العنوان',
+        'date'        => 'التاريخ',
+        'time'        => 'وقت البداية',
+        'duration'    => 'المدة',
+        'children'    => 'عدد الأطفال',
+        'child_name'  => 'الاسم',
+        'child_age'   => 'العمر',
+        'child_allrg' => 'الحساسية',
+        'child_needs' => 'احتياجات خاصة',
+        'notes'       => 'ملاحظات إضافية',
+        'child_label' => 'الطفل',
     ],
-][$lang] ?? [];
+];
 
+$t        = $i18n[$lang] ?? $i18n['fr'];
 $dir      = $lang === 'ar' ? 'rtl' : 'ltr';
 $base_url = defined('BASE_URL') ? BASE_URL : '';
 $min_date = date('Y-m-d', time() + 86400);
+$co_logo  = get_setting('company_logo', '');
 ?>
 <!DOCTYPE html>
 <html lang="<?= $lang ?>" dir="<?= $dir ?>">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>City / Clients externes – Faiza Kids Concierge</title>
+<title><?= sanitize($t['title']) ?> – Faiza Kids Concierge</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="<?= $base_url ?>/assets/css/public.css">
-<style>:root{--hotel-color:#2D6A4F;--hotel-accent:#E8C342;}</style>
+<style>:root{--hotel-color:#014D3E;--hotel-color-end:#005B45;}</style>
 </head>
-<body class="fk-public-page">
+<body class="pk-page">
 
-<header class="fk-public-header">
-  <div class="fk-public-header-inner">
-    <div style="display:flex;align-items:center;gap:12px">
-      <div style="width:36px;height:36px;border-radius:50%;background:#0D2B1D;color:#52B788;font-weight:700;font-size:16px;display:flex;align-items:center;justify-content:center">F</div>
-      <div>
-        <div style="font-size:13px;font-weight:700;color:#1A2E24">Faiza Kids Concierge</div>
-        <div style="font-size:11px;color:#6B7A72">Agadir & région</div>
+<header class="pk-header">
+  <div class="pk-header-inner">
+
+    <div class="pk-brand">
+      <?php if ($co_logo): ?>
+        <img src="<?= htmlspecialchars($co_logo) ?>" alt="Faiza Kids" class="pk-brand-logo-img">
+      <?php else: ?>
+        <div class="pk-brand-badge">FK</div>
+      <?php endif; ?>
+      <div class="pk-brand-info">
+        <div class="pk-brand-name">Faiza Kids Concierge</div>
+        <div class="pk-brand-sub">Agadir &amp; région</div>
       </div>
     </div>
-    <div class="fk-lang-switcher">
+
+    <nav class="pk-langs">
       <?php foreach (['fr'=>'FR','en'=>'EN','ar'=>'عربي'] as $lc=>$ll): ?>
-      <a href="?lang=<?= $lc ?>" class="<?= $lang===$lc?'active':'' ?>"><?= $ll ?></a>
+      <a href="?lang=<?= $lc ?>" class="pk-lang<?= $lang===$lc?' is-active':'' ?>"><?= $ll ?></a>
       <?php endforeach; ?>
-    </div>
+    </nav>
+
   </div>
 </header>
 
-<div class="fk-public-hero" style="background:linear-gradient(135deg,#0D2B1D 0%,#2D6A4F 100%)">
-  <h1><?= sanitize($t['title']) ?></h1>
-  <p style="white-space:pre-line;max-width:600px;margin:0 auto"><?= sanitize($t['intro']) ?></p>
+<section class="pk-hero">
+  <div class="pk-hero-inner">
+    <div class="pk-hero-chip">🏠 <?= $lang==='ar'?'خدمة منزلية':($lang==='en'?'Home service':'Service à domicile') ?></div>
+    <h1 class="pk-hero-h1"><?= sanitize($t['title']) ?></h1>
+    <p class="pk-hero-p"><?= sanitize($t['subtitle']) ?></p>
+  </div>
+</section>
+
+<div class="pk-trusts">
+  <div class="pk-trust"><div class="pk-trust-icon">🏠</div><div class="pk-trust-label"><?= sanitize($t['trust1']) ?></div></div>
+  <div class="pk-trust"><div class="pk-trust-icon">💬</div><div class="pk-trust-label"><?= sanitize($t['trust2']) ?></div></div>
+  <div class="pk-trust"><div class="pk-trust-icon">✅</div><div class="pk-trust-label"><?= sanitize($t['trust3']) ?></div></div>
+  <div class="pk-trust"><div class="pk-trust-icon">🌐</div><div class="pk-trust-label"><?= sanitize($t['trust4']) ?></div></div>
 </div>
 
-<div class="fk-form-wrap">
-  <?php if (!empty($errors)): ?>
-  <div class="fk-alert-box fk-alert-error">
-    <ul style="margin:0;padding-left:18px"><?php foreach ($errors as $e): ?><li><?= sanitize($e) ?></li><?php endforeach; ?></ul>
-  </div>
-  <?php endif; ?>
+<main class="pk-main">
+  <div class="pk-card">
 
-  <form method="POST" id="cityBookingForm">
-    <input type="hidden" name="client_language" value="<?= $lang ?>">
-
-    <!-- Client -->
-    <div class="fk-form-section">
-      <div class="fk-form-section-title"><?= $lang==='ar'?'معلومات العميل':($lang==='en'?'Your information':'Vos informations') ?></div>
-      <div class="fk-form-grid-2">
-        <div class="fk-field"><label><?= $lang==='ar'?'الاسم الكامل *':($lang==='en'?'Full name *':'Nom complet *') ?></label>
-          <input type="text" name="client_name" class="fk-public-input" value="<?= sanitize($_POST['client_name']??'') ?>" required></div>
-        <div class="fk-field"><label><?= $lang==='ar'?'رقم واتساب *':($lang==='en'?'WhatsApp *':'WhatsApp *') ?></label>
-          <input type="tel" name="client_whatsapp" class="fk-public-input" value="<?= sanitize($_POST['client_whatsapp']??'') ?>" placeholder="+212 6XX XXX XXX" required></div>
-        <div style="grid-column:span 2" class="fk-field"><label><?= $lang==='ar'?'البريد الإلكتروني':($lang==='en'?'Email (optional)':'Email (optionnel)') ?></label>
-          <input type="email" name="client_email" class="fk-public-input" value="<?= sanitize($_POST['client_email']??'') ?>"></div>
-      </div>
-    </div>
-
-    <!-- Location -->
-    <div class="fk-form-section">
-      <div class="fk-form-section-title">📍 <?= $lang==='ar'?'الموقع':($lang==='en'?'Location':'Localisation') ?></div>
-      <div class="fk-form-grid-2">
-        <div class="fk-field"><label><?= $lang==='ar'?'المدينة':($lang==='en'?'City':'Ville') ?></label>
-          <input type="text" name="city" class="fk-public-input" value="<?= sanitize($_POST['city']??'Agadir') ?>"></div>
-        <div class="fk-field"><label><?= $lang==='ar'?'الحي':($lang==='en'?'Area / District':'Quartier / Secteur') ?></label>
-          <input type="text" name="area" class="fk-public-input" value="<?= sanitize($_POST['area']??'') ?>"></div>
-        <div style="grid-column:span 2" class="fk-field"><label><?= $lang==='ar'?'العنوان الكامل':($lang==='en'?'Full address':'Adresse complète') ?></label>
-          <input type="text" name="address" class="fk-public-input" value="<?= sanitize($_POST['address']??'') ?>" placeholder="<?= $lang==='ar'?'الشارع، البناية، الطابق...':'Rue, immeuble, numéro...' ?>"></div>
-        <div style="grid-column:span 2" class="fk-field"><label><?= $lang==='ar'?'ملاحظات للعثور على العنوان':($lang==='en'?'Location notes':'Indications pour trouver l\'adresse') ?></label>
-          <input type="text" name="location_notes" class="fk-public-input" value="<?= sanitize($_POST['location_notes']??'') ?>"></div>
-      </div>
-    </div>
-
-    <!-- Service -->
-    <div class="fk-form-section">
-      <div class="fk-form-section-title">🗓 <?= $lang==='ar'?'تفاصيل الخدمة':($lang==='en'?'Service details':'Détails du service') ?></div>
-      <div class="fk-form-grid-2">
-        <div class="fk-field"><label><?= $lang==='ar'?'التاريخ *':($lang==='en'?'Date *':'Date *') ?></label>
-          <input type="date" name="service_date" class="fk-public-input" value="<?= sanitize($_POST['service_date']??'') ?>" min="<?= $min_date ?>" required></div>
-        <div class="fk-field"><label><?= $lang==='ar'?'وقت البداية *':($lang==='en'?'Start time *':'Heure de début *') ?></label>
-          <input type="time" name="start_time" class="fk-public-input" value="<?= sanitize($_POST['start_time']??'10:00') ?>" required></div>
-        <div class="fk-field"><label><?= $lang==='ar'?'المدة':($lang==='en'?'Duration':'Durée') ?></label>
-          <select name="duration_minutes" class="fk-public-input">
-            <?php foreach ([60=>'1h',90=>'1h30',120=>'2h',150=>'2h30',180=>'3h',240=>'4h',300=>'5h',360=>'6h',480=>'8h',720=>'12h'] as $m=>$l): ?>
-            <option value="<?= $m ?>" <?= ($_POST['duration_minutes']??120)==$m?'selected':'' ?>><?= $l ?></option>
-            <?php endforeach; ?>
-          </select></div>
-        <div class="fk-field"><label><?= $lang==='ar'?'عدد الأطفال *':($lang==='en'?'Number of children *':'Nombre d\'enfants *') ?></label>
-          <select name="children_count" id="childCount" class="fk-public-input" onchange="generateChildForms(this.value)">
-            <?php for ($n=1;$n<=8;$n++): ?>
-            <option value="<?= $n ?>" <?= ($_POST['children_count']??1)==$n?'selected':'' ?>><?= $n ?></option>
-            <?php endfor; ?>
-          </select></div>
-      </div>
-    </div>
-
-    <!-- Children details -->
-    <div class="fk-form-section">
-      <div class="fk-form-section-title">👶 <?= $lang==='ar'?'تفاصيل الأطفال':($lang==='en'?'Children details':'Détails des enfants') ?></div>
-      <div id="childrenContainer"></div>
-    </div>
-
-    <!-- Notes -->
-    <div class="fk-form-section">
-      <div class="fk-field"><label><?= $lang==='ar'?'ملاحظات إضافية':($lang==='en'?'Additional notes':'Notes complémentaires') ?></label>
-        <textarea name="special_needs" class="fk-public-input" rows="3"><?= sanitize($_POST['special_needs']??'') ?></textarea></div>
-    </div>
-
-    <!-- Price notice (City = NO price shown) -->
-    <div class="fk-notice-box">
-      <div class="fk-notice-icon">💬</div>
-      <p><?= sanitize($t['notice']) ?></p>
-    </div>
-
-    <!-- Rules -->
-    <div class="fk-rules-box">
-      <div class="fk-rules-title">📋 <?= $lang==='ar'?'القواعد':($lang==='en'?'Rules':'Règles') ?></div>
+    <?php if (!empty($errors)): ?>
+    <div class="pk-errors">
+      <div class="pk-errors-title"><?= $lang==='ar'?'يرجى تصحيح الأخطاء التالية':($lang==='en'?'Please fix the following errors':'Veuillez corriger les erreurs suivantes') ?></div>
       <ul>
-        <li><?= sanitize($t['rule1']) ?></li>
-        <li><?= sanitize($t['rule2']) ?></li>
-        <li><?= sanitize($t['rule3']) ?></li>
+        <?php foreach ($errors as $e): ?><li><?= sanitize($e) ?></li><?php endforeach; ?>
       </ul>
     </div>
+    <?php endif; ?>
 
-    <button type="submit" class="fk-submit-btn"><?= sanitize($t['submit']) ?></button>
-  </form>
-</div>
+    <form method="POST" id="cityBookingForm">
+      <input type="hidden" name="client_language" value="<?= $lang ?>">
 
-<footer class="fk-public-footer"><p>© <?= date('Y') ?> Faiza Multiservice · Agadir, Maroc</p></footer>
+      <!-- A: Client information -->
+      <div class="pk-section">
+        <div class="pk-section-head">
+          <span class="pk-section-num">A</span>
+          <span class="pk-section-title"><?= sanitize($t['sec_a']) ?></span>
+        </div>
+        <div class="pk-grid-2">
+          <div class="pk-field">
+            <label class="pk-label"><?= sanitize($t['name']) ?><span class="pk-req">*</span></label>
+            <input type="text" name="client_name" class="pk-input" value="<?= sanitize($_POST['client_name']??'') ?>" required>
+          </div>
+          <div class="pk-field">
+            <label class="pk-label"><?= sanitize($t['whatsapp']) ?><span class="pk-req">*</span></label>
+            <input type="tel" name="client_whatsapp" class="pk-input" value="<?= sanitize($_POST['client_whatsapp']??'') ?>" placeholder="+212 6XX XXX XXX" required>
+          </div>
+          <div class="pk-field pk-col-2">
+            <label class="pk-label"><?= sanitize($t['email']) ?></label>
+            <input type="email" name="client_email" class="pk-input" value="<?= sanitize($_POST['client_email']??'') ?>">
+          </div>
+        </div>
+      </div>
+
+      <!-- B: Location -->
+      <div class="pk-section">
+        <div class="pk-section-head">
+          <span class="pk-section-num">B</span>
+          <span class="pk-section-title">📍 <?= sanitize($t['sec_b']) ?></span>
+        </div>
+        <div class="pk-grid-2">
+          <div class="pk-field">
+            <label class="pk-label"><?= sanitize($t['city_lbl']) ?></label>
+            <input type="text" name="city" class="pk-input" value="<?= sanitize($_POST['city']??'Agadir') ?>">
+          </div>
+          <div class="pk-field">
+            <label class="pk-label"><?= sanitize($t['area']) ?></label>
+            <input type="text" name="area" class="pk-input" value="<?= sanitize($_POST['area']??'') ?>">
+          </div>
+          <div class="pk-field pk-col-2">
+            <label class="pk-label"><?= sanitize($t['address']) ?></label>
+            <input type="text" name="address" class="pk-input" value="<?= sanitize($_POST['address']??'') ?>" placeholder="<?= $lang==='ar'?'الشارع، البناية، الطابق...':'Rue, immeuble, numéro...' ?>">
+          </div>
+          <div class="pk-field pk-col-2">
+            <label class="pk-label"><?= sanitize($t['loc_notes']) ?></label>
+            <input type="text" name="location_notes" class="pk-input" value="<?= sanitize($_POST['location_notes']??'') ?>">
+          </div>
+        </div>
+      </div>
+
+      <!-- C: Service date & time -->
+      <div class="pk-section">
+        <div class="pk-section-head">
+          <span class="pk-section-num">C</span>
+          <span class="pk-section-title">🗓 <?= sanitize($t['sec_c']) ?></span>
+        </div>
+        <div class="pk-grid-2">
+          <div class="pk-field">
+            <label class="pk-label"><?= sanitize($t['date']) ?><span class="pk-req">*</span></label>
+            <input type="date" name="service_date" class="pk-input" value="<?= sanitize($_POST['service_date']??'') ?>" min="<?= $min_date ?>" required>
+          </div>
+          <div class="pk-field">
+            <label class="pk-label"><?= sanitize($t['time']) ?><span class="pk-req">*</span></label>
+            <input type="time" name="start_time" class="pk-input" value="<?= sanitize($_POST['start_time']??'10:00') ?>" required>
+          </div>
+          <div class="pk-field">
+            <label class="pk-label"><?= sanitize($t['duration']) ?></label>
+            <select name="duration_minutes" class="pk-select">
+              <?php foreach ([60=>'1h',90=>'1h30',120=>'2h',150=>'2h30',180=>'3h',240=>'4h',300=>'5h',360=>'6h',480=>'8h',720=>'12h'] as $m=>$l): ?>
+              <option value="<?= $m ?>" <?= ($_POST['duration_minutes']??120)==$m?'selected':'' ?>><?= $l ?></option>
+              <?php endforeach; ?>
+            </select>
+          </div>
+          <div class="pk-field">
+            <label class="pk-label"><?= sanitize($t['children']) ?><span class="pk-req">*</span></label>
+            <select name="children_count" id="childCount" class="pk-select">
+              <?php for ($n=1;$n<=8;$n++): ?>
+              <option value="<?= $n ?>" <?= ($_POST['children_count']??1)==$n?'selected':'' ?>><?= $n ?></option>
+              <?php endfor; ?>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- D: Children details -->
+      <div class="pk-section">
+        <div class="pk-section-head">
+          <span class="pk-section-num">D</span>
+          <span class="pk-section-title">👶 <?= sanitize($t['sec_d']) ?></span>
+        </div>
+        <div id="childrenContainer"></div>
+      </div>
+
+      <!-- E: Additional notes -->
+      <div class="pk-section">
+        <div class="pk-section-head">
+          <span class="pk-section-num">E</span>
+          <span class="pk-section-title"><?= sanitize($t['sec_e']) ?></span>
+        </div>
+        <div class="pk-field">
+          <label class="pk-label"><?= sanitize($t['notes']) ?></label>
+          <textarea name="special_needs" class="pk-textarea" rows="3" placeholder="<?= $lang==='ar'?'معلومات إضافية...':($lang==='en'?'Any additional information...':'Informations complémentaires...') ?>"><?= sanitize($_POST['special_needs']??'') ?></textarea>
+        </div>
+      </div>
+
+      <!-- Price notice -->
+      <div class="pk-notice">
+        <div class="pk-notice-ico">💬</div>
+        <div>
+          <div class="pk-notice-title"><?= sanitize($t['notice_title']) ?></div>
+          <div class="pk-notice-text"><?= sanitize($t['notice']) ?></div>
+        </div>
+      </div>
+
+      <!-- Service rules -->
+      <div class="pk-rules">
+        <div class="pk-rules-title">📋 <?= sanitize($t['rules_title']) ?></div>
+        <ul>
+          <li><?= sanitize($t['rule1']) ?></li>
+          <li><?= sanitize($t['rule2']) ?></li>
+          <li><?= sanitize($t['rule3']) ?></li>
+        </ul>
+      </div>
+
+      <div class="pk-submit-section">
+        <button type="submit" class="pk-submit-btn"><?= sanitize($t['submit']) ?></button>
+      </div>
+    </form>
+
+  </div>
+</main>
+
+<footer class="pk-footer">
+  <p>© <?= date('Y') ?> Faiza Multiservice · Agadir, Maroc</p>
+</footer>
 
 <script src="<?= $base_url ?>/assets/js/public.js"></script>
 <script>
-const LANG = '<?= $lang ?>';
-function generateChildForms(count) {
-  const c = document.getElementById('childrenContainer');
-  c.innerHTML = '';
-  for (let i = 0; i < parseInt(count); i++) {
-    c.innerHTML += `<div class="fk-child-card">
-      <div class="fk-child-number">${LANG==='ar'?'الطفل':(LANG==='en'?'Child':'Enfant')} ${i+1}</div>
-      <div class="fk-form-grid-4">
-        <div class="fk-field"><label>${LANG==='ar'?'الاسم':(LANG==='en'?'Name':'Prénom')}</label>
-          <input type="text" name="child_name[]" class="fk-public-input"></div>
-        <div class="fk-field"><label>${LANG==='ar'?'العمر':(LANG==='en'?'Age':'Âge')}</label>
-          <input type="number" name="child_age[]" class="fk-public-input" min="0" max="18"></div>
-        <div class="fk-field"><label>${LANG==='ar'?'الحساسية':(LANG==='en'?'Allergies':'Allergies')}</label>
-          <input type="text" name="child_allergies[]" class="fk-public-input"></div>
-        <div class="fk-field"><label>${LANG==='ar'?'احتياجات':(LANG==='en'?'Special needs':'Besoins')}</label>
-          <input type="text" name="child_needs[]" class="fk-public-input"></div>
-      </div></div>`;
-  }
-}
-document.addEventListener('DOMContentLoaded', () => generateChildForms(<?= (int)($_POST['children_count']??1) ?>));
+(function() {
+  var INITIAL_COUNT = <?= (int)($_POST['children_count'] ?? 1) ?>;
+  var LANG = '<?= $lang ?>';
+  document.addEventListener('DOMContentLoaded', function() {
+    if (typeof window.generateChildForms === 'function') {
+      window.generateChildForms(INITIAL_COUNT, LANG);
+    }
+    var sel = document.getElementById('childCount');
+    if (sel) {
+      sel.addEventListener('change', function() {
+        if (typeof window.generateChildForms === 'function') {
+          window.generateChildForms(parseInt(this.value), LANG);
+        }
+      });
+    }
+  });
+})();
 </script>
 </body>
 </html>
